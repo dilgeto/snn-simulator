@@ -1,2 +1,2 @@
 # snn-simulator
-Simulator
+Simulator for my thesis
