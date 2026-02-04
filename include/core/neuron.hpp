@@ -8,33 +8,29 @@ enum class NeuronType {
 };
 
 class IzhikevichNeuron {
-    // Atributos
-    private:
-        // Parámetros para las ecuaciones diferenciales
-        double a, b, c, d;
-
-        // Variables de estado
-        double v; // Potencial de membrana
-        double u; // Variable de recuperación
-
-        // Para simulación
-        double I_syn; // Corriente sináptica acumulada
-        bool spiked; // Estado de spike
-
-        // Umbral de spike
-        static constexpr double V_THRESHOLD = 30.0; // mV
+private:
+    // Parámetros de las ecuaciones diferenciales
+    double a, b, c, d;
+    double v;
+    double u;
+    double I_syn; // 
+    bool spiked; // Indica si la neurona se dispara o no
     
-    // Métodos
-    public:
-        // Constructor con diferentes tipos neuronales
-        IzhikevichNeuron(NeuronType type);
-        IzhikevichNeuron(double a, double b, double c, double d);
-        // Paso de integración (método de Euler)
-        void step(double dt);
-        // Recibir corriente sináptica
-        void add_current(double current);
-        // Reset después de spike
-        void reset();
-        bool has_spiked() { return spiked; }
-        double get_voltage() { return v; }
+    static constexpr double V_THRESHOLD = 30.0;
+    
+public:
+    IzhikevichNeuron(NeuronType type);
+    IzhikevichNeuron(double a, double b, double c, double d);
+    
+    void step(double dt);
+    void addCurrent(double current);
+    void reset();
+    
+    // Agregar 'const' a estos getters
+    bool hasSpiked() const { return spiked; }          // ← AGREGAR const
+    double getVoltage() const { return v; }            // ← AGREGAR const
+    double getRecovery() const { return u; }           // ← AGREGAR const
+    
+    void setVoltage(double voltage) { v = voltage; }
+    void setRecovery(double recovery) { u = recovery; }
 };

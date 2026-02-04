@@ -1,0 +1,59 @@
+#include <iostream>
+#include <vector>
+#include "../../include/core/network.hpp"
+
+int main() {
+    // Crear red con dt = 1.0 ms
+    Network net(1.0);
+    
+    // Construir red: 2 inputs -> 2 hidden -> 1 output
+    std::cout << "Construyendo red..." << std::endl;
+    
+    int in1 = net.addInputNeuron();
+    int in2 = net.addInputNeuron();
+    
+    int h1 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
+    int h2 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
+    
+    int out = net.addOutputNeuron();
+    
+    // Conexiones (sin pesos)
+    net.addSynapse(in1, h1);
+    net.addSynapse(in1, h2);
+    net.addSynapse(in2, h2);
+    net.addSynapse(h1, out);
+    net.addSynapse(h2, out);
+    
+    net.printInfo();
+    net.printTopology();
+    
+    // Evaluar con diferentes pesos (típico en WANN)
+    std::vector<double> test_weights = {-2.0, -1.0, 0.0, 1.0, 2.0, 5.0, 10.0};
+    
+    for (double weight : test_weights) {
+        std::cout << "\n=== Evaluando con peso: " << weight << " ===" << std::endl;
+        
+        net.reset();
+        
+        int spike_count = 0;
+        
+        // Simular por 100ms
+        for (double t = 0; t < 100.0; t += 1.0) {
+            // Aplicar corriente constante a las entradas
+            net.setInputCurrents({20.0, 15.0});
+            
+            // Paso con peso compartido
+            net.step(weight);
+            
+            // Contar spikes de salida
+            auto output_spikes = net.getOutputSpikes();
+            if (output_spikes[0]) {
+                spike_count++;
+            }
+        }
+        
+        std::cout << "Total output spikes: " << spike_count << std::endl;
+    }
+    
+    return 0;
+}

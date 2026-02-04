@@ -30,6 +30,9 @@ IzhikevichNeuron::IzhikevichNeuron(NeuronType type) : I_syn(0.0), spiked(false) 
     u = b * v;
 }
 
+/**
+ *  Inicializador para una neurona personalizada
+ */
 IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d) 
         : a(a), b(b), c(c), d(d), v(c), u(b*c), I_syn(0.0), spiked(false) {}
 
@@ -67,14 +70,14 @@ void IzhikevichNeuron::step(double dt) {
 }
 
 /**
- *
+ *  Agrega corriente a la neurona
  */
-void IzhikevichNeuron::add_current(double current) {
+void IzhikevichNeuron::addCurrent(double current) {
     I_syn += current;
 }
 
 /**
- *
+ *  Restaura los valores iniciales de la neurona
  */
 void IzhikevichNeuron::reset() {
     v = c;
