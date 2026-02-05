@@ -57,11 +57,11 @@ void IzhikevichNeuron::step(double dt) {
     // Izhikevich recomienda usar dt = 0.5ms o ods pasos de 0.5ms
 
     for (int i = 0; i < 2; i++) {
-        double dv = ((0.04 * v * v) + (5.0 * v) + 140.0 - u + I_syn) * (dt / 2.0);
+        double dv = (0.04 * v * v + 5.0 * v + 140.0 - u + I_syn) * (dt / 2.0);
         v += dv;
 
         // Actualizar u
-        double du = a * ((b * v) - u) * (dt / 2.0);
+        double du = a * (b * v - u) * (dt / 2.0);
         u += du;
     }
 

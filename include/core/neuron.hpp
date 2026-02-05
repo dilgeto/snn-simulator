@@ -1,3 +1,6 @@
+#ifndef NEURON_HPP
+#define NEURON_HPP
+
 enum class NeuronType {
     REGULAR_SPIKING,
     FAST_SPIKING,
@@ -13,7 +16,7 @@ private:
     double a, b, c, d;
     double v;
     double u;
-    double I_syn; // 
+    double I_syn; // Corriente sináptica acumulada
     bool spiked; // Indica si la neurona se dispara o no
     
     static constexpr double V_THRESHOLD = 30.0;
@@ -34,3 +37,5 @@ public:
     void setVoltage(double voltage) { v = voltage; }
     void setRecovery(double recovery) { u = recovery; }
 };
+
+#endif
