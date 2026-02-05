@@ -14,6 +14,7 @@ enable_testing()
 find_package(CLI11 CONFIG REQUIRED)
 find_package(Catch2 3 REQUIRED)
 
+# Core del simulador
 add_library(snn_core
     src/core/neuron.cpp
     src/core/network.cpp
@@ -23,13 +24,40 @@ target_include_directories(snn_core PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
 
+# Codificador del simulador
+add_library(snn_encoding
+    src/encoding/poissonEncoder.cpp
+)
+
+target_include_directories(snn_encoding PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+# Decodificador del simulador
+# TODO: Incluirlo
+
+# TODO: Incluir el motor
+add_library(snn_engine
+    src/core/simulator.cpp
+)
+
+target_include_directories(snn_engine PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+target_link_libraries(snn_engine
+    PUBLIC
+        snn_core
+        snn_encoding
+)
+
 # Simulador principal
 add_executable(snn_simulator
     src/core/main.cpp
 )
 target_link_libraries(snn_simulator 
-    PRIVATE 
-        snn_core
+    PRIVATE
+        snn_engine
         CLI11::CLI11
 )
 

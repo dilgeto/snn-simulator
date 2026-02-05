@@ -1,5 +1,4 @@
 #include <iostream>
-//#include <iomanip>
 #include "../../include/core/network.hpp"
 
 Network::Network(double timestep)

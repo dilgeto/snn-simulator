@@ -23,6 +23,9 @@ IzhikevichNeuron::IzhikevichNeuron(NeuronType type) : I_syn(0.0), spiked(false) 
         case NeuronType::RESONATOR:
             a = 0.1; b = 0.26; c = -65.0; d = 2.0;
             break;
+        default:
+            a = 0.02; b = 0.2; c = -65.0; d = 8.0;
+            break;
     }
 
     // Inicializar estado en reposo

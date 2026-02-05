@@ -1,24 +1,25 @@
 #include <CLI/CLI.hpp>
-#include <iostream>
-#include <vector>
-#include "../../include/core/network.hpp"
+#include "../../include/core/simulator.hpp"
+#include "CLI/CLI.hpp"
 
 int main(int argc, char** argv) {
     CLI::App app{"Spiking Neural Network Simulator"};
 
     // Variables a utilizar
-    double time = 100.0;
+    double duration = 100.0;
     double dt = 1.0;
-    double input1 = 20.0;
-    double input2 = 15.0;
+    double weight = 1.0;
 
-    app.add_option("-t,--total_time", time, "Total time of simulation")
+    app.add_option("-t,--duration", duration, "Total duration of simulation")
         ->check(CLI::PositiveNumber);
     app.add_option("-d,--timestep", dt, "Timestep")
         ->check(CLI::PositiveNumber);
+    app.add_option("-w,--weight", weight, "Weight")
+        ->check(CLI::Number);
 
     CLI11_PARSE(app, argc, argv);
 
+    /*
     // Se crea la red con el timestep definido
     Network net(dt);
     
@@ -72,6 +73,13 @@ int main(int argc, char** argv) {
         
         std::cout << "Total output spikes: " << spike_count << std::endl;
     }
+    */
     
+    Simulator simulator(dt);
+    
+    simulator.generateTopology();
+    
+    simulator.startSimulation(weight, duration);
+
     return 0;
 }
