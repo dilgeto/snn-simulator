@@ -16,10 +16,6 @@ int main(int argc, char** argv) {
         ->check(CLI::PositiveNumber);
     app.add_option("-d,--timestep", dt, "Timestep")
         ->check(CLI::PositiveNumber);
-    app.add_option("-i,--input1", input1, "First neuron input")
-        ->check(CLI::PositiveNumber);
-    app.add_option("-y,--input2", input2, "Second neuron input")
-        ->check(CLI::PositiveNumber);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -62,7 +58,6 @@ int main(int argc, char** argv) {
         // Simular por 100ms
         for (double t = 0; t < time; t += 1.0) {
             // Aplicar corriente constante a las entradas
-            //net.setInputCurrents({20.0, 15.0});
             net.setInputCurrents({input1, input2});
             
             // Paso con peso compartido
