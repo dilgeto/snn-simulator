@@ -1,85 +1,333 @@
-#include <iostream>
+// src/core/simulator.cpp
 #include "../../include/core/simulator.hpp"
+#include <iostream>
+#include <chrono>
+#include <cmath>
 
-Simulator::Simulator(double timestep) : dt(timestep), spikeCount(0) {
-    Network net(dt);
+Simulator::Simulator(Network* net, const SimulationConfig& cfg)
+    : network(net), config(cfg), owns_network(false) {
 }
 
-void Simulator::generateTopology() {
-    // Input layer
-    int in0 = net.addInputNeuron();
-    int in1 = net.addInputNeuron();
-    int in2 = net.addInputNeuron();
-
-    // Hidden layers
-    // Layer 0
-    int h0_0 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-    int h0_1 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-    int h0_2 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-    int h0_3 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-    int h0_4 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-
-    /*
-    // Layer 1
-    int h1_0 = net.addHiddenNeuron();
-    int h1_1 = net.addHiddenNeuron();
-    int h1_2 = net.addHiddenNeuron();
-    int h1_3 = net.addHiddenNeuron();
-    int h1_4 = net.addHiddenNeuron();
-
-    // Layer 2
-    int h2_0 = net.addHiddenNeuron();
-    int h2_1 = net.addHiddenNeuron();
-    int h2_2 = net.addHiddenNeuron();
-    int h2_3 = net.addHiddenNeuron();
-    int h2_4 = net.addHiddenNeuron();
-    */
-    
-    // Output layer
-    int out = net.addOutputNeuron();
-    
-    // Synapses
-    net.addSynapse(in0, h0_0);
-    net.addSynapse(in0, h0_1);
-    net.addSynapse(in0, h0_2);
-    net.addSynapse(in0, h0_3);
-    net.addSynapse(in0, h0_4);
-    net.addSynapse(in1, h0_0);
-    net.addSynapse(in1, h0_1);
-    net.addSynapse(in1, h0_2);
-    net.addSynapse(in1, h0_3);
-    net.addSynapse(in1, h0_4);
-    net.addSynapse(in2, h0_0);
-    net.addSynapse(in2, h0_1);
-    net.addSynapse(in2, h0_2);
-    net.addSynapse(in2, h0_3);
-    net.addSynapse(in2, h0_4);
-    net.addSynapse(h0_0, out);
-    net.addSynapse(h0_1, out);
-    net.addSynapse(h0_2, out);
-    net.addSynapse(h0_3, out);
-    net.addSynapse(h0_4, out);
-
-    std::cout << "Topology generated!" << std::endl;
-    net.printInfo();
-    net.printTopology();
+Simulator::Simulator(double dt)
+    : network(nullptr), owns_network(false) {
+    config.dt = dt;
 }
 
-void Simulator::startSimulation(
-    double weight,
-    double duration
-    //PoissonEncoder* encoder
-    ) {
-    for (double t = 0; t < duration; t += 1.0) {
-        net.setInputCurrents({20.0, 20.0});
+Simulator::~Simulator() {
+    if (owns_network && network) {
+        delete network;
+    }
+}
 
-        net.step(weight);
+void Simulator::setNetwork(Network* net, bool take_ownership) {
+    if (owns_network && network) {
+        delete network;
+    }
+    network = net;
+    owns_network = take_ownership;
+}
 
-        auto outputSpikes = net.getOutputSpikes();
-        if (outputSpikes[0]) {
-            spikeCount++;
+void Simulator::setEncoder(std::unique_ptr<Encoder> enc) {
+    encoder = std::move(enc);
+}
+
+void Simulator::setDecoder(std::unique_ptr<RLDecoder> dec) {
+    decoder = std::move(dec);
+}
+
+void Simulator::setConfig(const SimulationConfig& cfg) {
+    config = cfg;
+}
+
+void Simulator::reset() {
+    if (network) {
+        network->reset();
+    }
+}
+
+// ===== SIMULACIÓN BÁSICA =====
+
+SimulationResult Simulator::simulate(
+    const std::vector<double>& input_currents,
+    double shared_weight,
+    double duration) {
+    
+    if (!network) {
+        std::cerr << "Error: No network set in simulator" << std::endl;
+        return SimulationResult();
+    }
+    
+    if (duration <= 0) {
+        duration = config.evaluation_duration;
+    }
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    SimulationResult result;
+    network->reset();
+    
+    size_t num_outputs = network->getOutputCount();
+    result.output_spike_times.resize(num_outputs);
+    
+    double total_spikes = 0;
+    
+    // Ejecutar simulación
+    for (double t = 0; t < duration; t += config.dt) {
+        // Aplicar corrientes de entrada
+        network->setInputCurrents(input_currents);
+        
+        // Ejecutar paso
+        network->step(shared_weight);
+        
+        // Recolectar spikes de salida
+        auto output_spikes = network->getOutputSpikes();
+        for (size_t i = 0; i < output_spikes.size(); i++) {
+            if (output_spikes[i]) {
+                result.output_spike_times[i].push_back(t);
+                total_spikes++;
+            }
         }
     }
+    
+    // Obtener voltajes finales
+    auto voltages = network->getVoltages();
+    auto output_ids = network->getOutputNeuronIds();
+    for (int id : output_ids) {
+        result.output_voltages.push_back(voltages[id]);
+    }
+    
+    result.total_spikes = total_spikes;
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    result.simulation_time_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    
+    if (config.verbose) {
+        printStats(result);
+    }
+    
+    return result;
+}
 
-    std::cout << "Total output spikes: " << spikeCount << std::endl;
+SimulationResult Simulator::simulateEncoded(
+    const std::vector<double>& input_values,
+    double shared_weight,
+    double duration) {
+    
+    if (!network) {
+        std::cerr << "Error: No network set in simulator" << std::endl;
+        return SimulationResult();
+    }
+    
+    if (!encoder) {
+        std::cerr << "Error: No encoder set in simulator" << std::endl;
+        return SimulationResult();
+    }
+    
+    if (duration <= 0) {
+        duration = config.evaluation_duration;
+    }
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    SimulationResult result;
+    network->reset();
+    
+    // Codificar entradas
+    auto encoded_inputs = encoder->encodeVector(input_values, config.encoding_duration, config.dt);
+    
+    // Verificar que el número de entradas coincida
+    if (encoded_inputs.size() != network->getInputCount()) {
+        std::cerr << "Error: Input size mismatch. Expected " 
+                  << network->getInputCount() << ", got " 
+                  << encoded_inputs.size() << std::endl;
+        return SimulationResult();
+    }
+    
+    size_t num_outputs = network->getOutputCount();
+    result.output_spike_times.resize(num_outputs);
+    
+    double total_spikes = 0;
+    
+    // Ejecutar simulación
+    for (double t = 0; t < duration; t += config.dt) {
+        // Aplicar spikes codificados a las neuronas de entrada
+        auto input_ids = network->getInputNeuronIds();
+        for (size_t i = 0; i < encoded_inputs.size(); i++) {
+            // Buscar spikes que ocurren en este tiempo
+            for (double spike_time : encoded_inputs[i]) {
+                if (std::abs(spike_time - t) < config.dt / 2.0) {
+                    // Inyectar corriente fuerte para generar spike
+                    network->setInputCurrent(input_ids[i], 100.0);
+                }
+            }
+        }
+        
+        // Ejecutar paso
+        network->step(shared_weight);
+        
+        // Recolectar spikes de salida
+        auto output_spikes = network->getOutputSpikes();
+        for (size_t i = 0; i < output_spikes.size(); i++) {
+            if (output_spikes[i]) {
+                result.output_spike_times[i].push_back(t);
+                total_spikes++;
+            }
+        }
+    }
+    
+    // Voltajes finales
+    auto voltages = network->getVoltages();
+    auto output_ids = network->getOutputNeuronIds();
+    for (int id : output_ids) {
+        result.output_voltages.push_back(voltages[id]);
+    }
+    
+    result.total_spikes = total_spikes;
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    result.simulation_time_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    
+    if (config.verbose) {
+        printStats(result);
+    }
+    
+    return result;
+}
+
+// ===== REINFORCEMENT LEARNING =====
+
+double Simulator::runEpisode(
+    const std::vector<double>& initial_state,
+    double shared_weight,
+    int max_steps,
+    std::function<bool(const std::vector<double>&, int&, double&)> step_callback) {
+    
+    if (!network || !encoder || !decoder) {
+        std::cerr << "Error: Network, encoder, or decoder not set" << std::endl;
+        return 0.0;
+    }
+    
+    double total_reward = 0.0;
+    std::vector<double> current_state = initial_state;
+    
+    for (int step = 0; step < max_steps; step++) {
+        network->reset();
+        
+        // Codificar estado
+        auto encoded_state = encoder->encodeVector(current_state, 
+                                                   config.encoding_duration, 
+                                                   config.dt);
+        
+        // Simular red
+        auto result = simulateEncoded(current_state, shared_weight, config.evaluation_duration);
+        
+        // Decodificar acción
+        int action = decoder->decodeDiscreteAction(result.output_spike_times);
+        
+        // Ejecutar paso en el ambiente
+        double reward = 0.0;
+        bool done = step_callback(current_state, action, reward);
+        
+        total_reward += reward;
+        
+        if (done) {
+            break;
+        }
+    }
+    
+    return total_reward;
+}
+
+double Simulator::evaluateFitness(
+    const std::vector<std::vector<double>>& test_cases,
+    double shared_weight,
+    std::function<double(const SimulationResult&)> fitness_func) {
+    
+    if (!network) {
+        return 0.0;
+    }
+    
+    double total_fitness = 0.0;
+    
+    for (const auto& test_case : test_cases) {
+        auto result = simulateEncoded(test_case, shared_weight, config.evaluation_duration);
+        total_fitness += fitness_func(result);
+    }
+    
+    return total_fitness / test_cases.size();
+}
+
+// ===== PARA WANN =====
+
+std::vector<double> Simulator::evaluateMultipleWeights(
+    const std::vector<double>& weights,
+    const std::vector<double>& input_values,
+    std::function<double(const SimulationResult&)> fitness_func) {
+    
+    std::vector<double> fitness_scores;
+    fitness_scores.reserve(weights.size());
+    
+    for (double weight : weights) {
+        auto result = simulateEncoded(input_values, weight, config.evaluation_duration);
+        fitness_scores.push_back(fitness_func(result));
+    }
+    
+    return fitness_scores;
+}
+
+double Simulator::findBestWeight(
+    const std::vector<double>& candidate_weights,
+    const std::vector<std::vector<double>>& test_cases,
+    std::function<double(const SimulationResult&)> fitness_func) {
+    
+    double best_weight = candidate_weights[0];
+    double best_fitness = -std::numeric_limits<double>::infinity();
+    
+    for (double weight : candidate_weights) {
+        double avg_fitness = evaluateFitness(test_cases, weight, fitness_func);
+        
+        if (config.verbose) {
+            std::cout << "Weight " << weight << ": fitness = " << avg_fitness << std::endl;
+        }
+        
+        if (avg_fitness > best_fitness) {
+            best_fitness = avg_fitness;
+            best_weight = weight;
+        }
+    }
+    
+    if (config.verbose) {
+        std::cout << "Best weight: " << best_weight 
+                  << " (fitness: " << best_fitness << ")" << std::endl;
+    }
+    
+    return best_weight;
+}
+
+// ===== UTILIDADES =====
+
+void Simulator::printStats(const SimulationResult& result) const {
+    std::cout << "\n=== Simulation Statistics ===" << std::endl;
+    std::cout << "Total output spikes: " << result.total_spikes << std::endl;
+    std::cout << "Simulation time: " << result.simulation_time_ms << " ms" << std::endl;
+    
+    std::cout << "Spikes per output neuron:" << std::endl;
+    for (size_t i = 0; i < result.output_spike_times.size(); i++) {
+        std::cout << "  Output " << i << ": " 
+                  << result.output_spike_times[i].size() << " spikes";
+        if (!result.output_spike_times[i].empty()) {
+            std::cout << " (first at " << result.output_spike_times[i][0] << "ms)";
+        }
+        std::cout << std::endl;
+    }
+    
+    if (!result.output_voltages.empty()) {
+        std::cout << "Final output voltages:" << std::endl;
+        for (size_t i = 0; i < result.output_voltages.size(); i++) {
+            std::cout << "  Output " << i << ": " 
+                      << result.output_voltages[i] << " mV" << std::endl;
+        }
+    }
+    
+    std::cout << "=========================" << std::endl;
 }

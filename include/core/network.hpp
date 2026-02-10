@@ -70,6 +70,20 @@ public:
     // Debug
     void printInfo() const;
     void printTopology() const;
+    
+    // Métodos para RL
+
+    // Aplicar spikes codificacados directamente a neuronas de entrada
+    void applyInputSpikes(const std::vector<std::vector<double>>& encoded_spikes,
+                         double current_time);
+    
+    // Ejecutar y recolectar spikes de salida durante una ventana
+    std::vector<std::vector<double>> runAndCollectOutputSpikes(
+        double duration,
+        double shared_weight);
+    
+    // Reset rápido (sin limpiar topología)
+    void fastReset();
 };
 
 #endif

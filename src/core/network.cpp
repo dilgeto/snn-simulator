@@ -210,3 +210,53 @@ void Network::printTopology() const {
     }
     std::cout << "=========================" << std::endl;
 }
+
+void Network::applyInputSpikes(
+    const std::vector<std::vector<double>>& encoded_spikes,
+    double current_time) {
+    
+    size_t n = std::min(encoded_spikes.size(), input_neurons.size());
+    
+    for (size_t i = 0; i < n; i++) {
+        int neuron_id = input_neurons[i];
+        
+        // Verificar si hay algún spike en el tiempo actual
+        for (double spike_time : encoded_spikes[i]) {
+            // Si el spike ocurre en este paso de tiempo (con tolerancia)
+            if (std::abs(spike_time - current_time) < dt / 2.0) {
+                // Inyectar corriente fuerte para forzar spike
+                neurons[neuron_id].addCurrent(100.0);
+            }
+        }
+    }
+}
+
+std::vector<std::vector<double>> Network::runAndCollectOutputSpikes(
+    double duration,
+    double shared_weight) {
+    
+    std::vector<std::vector<double>> output_spike_times(output_neurons.size());
+    
+    double start_time = current_time;
+    double end_time = start_time + duration;
+    
+    while (current_time < end_time) {
+        step(shared_weight);
+        
+        // Recolectar spikes de salida
+        for (size_t i = 0; i < output_neurons.size(); i++) {
+            if (neurons[output_neurons[i]].hasSpiked()) {
+                output_spike_times[i].push_back(current_time - start_time);
+            }
+        }
+    }
+    
+    return output_spike_times;
+}
+
+void Network::fastReset() {
+    for (auto& neuron : neurons) {
+        neuron.reset();
+    }
+    current_time = 0.0;
+}
