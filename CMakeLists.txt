@@ -14,6 +14,12 @@ enable_testing()
 find_package(CLI11 CONFIG REQUIRED)
 find_package(Catch2 3 REQUIRED)
 
+# RLTools (header-only)
+set(RL_TOOLS_INCLUDE_DIR /home/dilget/rl-tools/include
+    CACHE PATH "Directorio de cabeceras de RLTools")
+add_library(rl_tools INTERFACE)
+target_include_directories(rl_tools INTERFACE ${RL_TOOLS_INCLUDE_DIR})
+
 # Core del simulador
 add_library(snn_core
     src/core/neuron.cpp
@@ -27,18 +33,18 @@ target_include_directories(snn_core PUBLIC
 # Codificador del simulador
 add_library(snn_encoding
     src/encoding/poissonEncoder.cpp
+    src/encoding/rateEncoder.cpp
+    src/encoding/rlEncoder.cpp
 )
 
 target_include_directories(snn_encoding PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
 
-# Decodificador del simulador
-# TODO: Incluirlo
-
-# TODO: Incluir el motor
+# Motor + decodificador
 add_library(snn_engine
     src/core/simulator.cpp
+    src/decoding/decoder.cpp
 )
 
 target_include_directories(snn_engine PUBLIC
@@ -76,6 +82,19 @@ include(Catch)
 catch_discover_tests(snn_tests)
 
 set_target_properties(snn_simulator PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
+)
+
+# Evaluación del péndulo con RLTools
+add_executable(snn_pendulum
+    src/rl/pendulum_eval.cpp
+)
+target_link_libraries(snn_pendulum
+    PRIVATE
+        snn_engine
+        rl_tools
+)
+set_target_properties(snn_pendulum PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
 )
 
