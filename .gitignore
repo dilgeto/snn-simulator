@@ -2,9 +2,6 @@
 build/
 cmake-build-*/
 
-# External
-external/
-
 # CMake
 CMakeCache.txt
 CMakeFiles/
