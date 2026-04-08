@@ -15,7 +15,7 @@ find_package(CLI11 CONFIG REQUIRED)
 find_package(Catch2 3 REQUIRED)
 
 # RLTools (header-only)
-set(RL_TOOLS_INCLUDE_DIR /home/dilget/rl-tools/include
+set(RL_TOOLS_INCLUDE_DIR external/rl-tools/include
     CACHE PATH "Directorio de cabeceras de RLTools")
 add_library(rl_tools INTERFACE)
 target_include_directories(rl_tools INTERFACE ${RL_TOOLS_INCLUDE_DIR})

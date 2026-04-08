@@ -5,7 +5,6 @@
 #include "../../include/decoding/decoder.hpp"
 #include <iostream>
 #include <vector>
-#include <memory>
 
 namespace rlt = rl_tools;
 

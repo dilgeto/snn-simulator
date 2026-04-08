@@ -1,9 +1,11 @@
 #include "../../include/core/neuron.hpp"
 
-/**
- *
- */
-IzhikevichNeuron::IzhikevichNeuron(NeuronType type) : I_syn(0.0), spiked(false) {
+// Definición de miembros estáticos thread-local
+thread_local std::mt19937 IzhikevichNeuron::rng{std::random_device{}()};
+thread_local std::uniform_real_distribution<double> IzhikevichNeuron::uniform{-0.5, 0.5};
+
+IzhikevichNeuron::IzhikevichNeuron(NeuronType type, double i_offset, double noise)
+        : I_syn(0.0), i_offset(i_offset), noise(noise), spiked(false) {
     switch(type) {
         case NeuronType::REGULAR_SPIKING:
             a = 0.02; b = 0.2; c = -65.0; d = 8.0;
@@ -28,7 +30,6 @@ IzhikevichNeuron::IzhikevichNeuron(NeuronType type) : I_syn(0.0), spiked(false) 
             break;
     }
 
-    // Inicializar estado en reposo
     v = c;
     u = b * v;
 }
@@ -36,39 +37,35 @@ IzhikevichNeuron::IzhikevichNeuron(NeuronType type) : I_syn(0.0), spiked(false) 
 /**
  *  Inicializador para una neurona personalizada
  */
-IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d) 
-        : a(a), b(b), c(c), d(d), v(c), u(b*c), I_syn(0.0), spiked(false) {}
+IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d,
+                                   double i_offset, double noise)
+        : a(a), b(b), c(c), d(d), v(c), u(b*c),
+          I_syn(0.0), i_offset(i_offset), noise(noise), spiked(false) {}
 
 /**
- *  Método de Euler
+ *  Método de Euler (dos sub-pasos de dt/2 por precisión, como Izhikevich recomienda)
+ *  Corriente total = I_syn + i_offset + noise * Uniform(-0.5, 0.5)  [igual que ANNarchy]
  */
 void IzhikevichNeuron::step(double dt) {
     spiked = false;
 
-    // verificar si hay spike
-    if (v >= V_THRESHOLD) {
-        spiked = true;
-        v = c; // Reset del voltaje
-        u += d; // Reset de la recuperación
-    }
-
-    // Ecuaciones de Izhikevich
-    // dv/dt = 0.04*v^2 + 5*v + 140 - u + I
-    // du/dt = a * (b*v - u)
-
-    // Integración de v (dos pasos para mayor precisión)
-    // Izhikevich recomienda usar dt = 0.5ms o ods pasos de 0.5ms
+    // Corriente total: sináptica + offset constante + ruido uniforme
+    double I_total = I_syn + i_offset + noise * uniform(rng);
 
     for (int i = 0; i < 2; i++) {
-        double dv = (0.04 * v * v + 5.0 * v + 140.0 - u + I_syn) * (dt / 2.0);
+        double dv = (0.04 * v * v + 5.0 * v + 140.0 - u + I_total) * (dt / 2.0);
         v += dv;
 
-        // Actualizar u
         double du = a * (b * v - u) * (dt / 2.0);
         u += du;
     }
 
-    // Reset de corriente sináptica (se acumula cada paso)
+    if (v >= V_THRESHOLD) {
+        spiked = true;
+        v = c;
+        u += d;
+    }
+
     I_syn = 0.0;
 }
 
