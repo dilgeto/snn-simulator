@@ -38,7 +38,7 @@ public:
     int addHiddenNeuron(NeuronType type = NeuronType::REGULAR_SPIKING);
     
     // Agregar sinapsis SIN peso
-    int addSynapse(int pre_id, int post_id);
+    int addSynapse(int pre_id, int post_id, bool excitatory = true);
     
     // Simulación - el peso compartido se pasa como parámetro
     void step(double shared_weight);

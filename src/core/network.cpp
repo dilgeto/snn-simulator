@@ -35,7 +35,7 @@ int Network::addHiddenNeuron(NeuronType type) {
 }
 
 // Agregar sinapsis - SOLO topología, sin peso
-int Network::addSynapse(int pre_id, int post_id) {
+int Network::addSynapse(int pre_id, int post_id, bool excitatory) {
     // Validación
     if (pre_id < 0 || pre_id >= static_cast<int>(neurons.size()) ||
         post_id < 0 || post_id >= static_cast<int>(neurons.size())) {
@@ -52,7 +52,7 @@ int Network::addSynapse(int pre_id, int post_id) {
     }
     
     int synapse_id = synapses.size();
-    synapses.emplace_back(pre_id, post_id);
+    synapses.emplace_back(pre_id, post_id, excitatory);
     
     // Actualizar mapeos
     post_synapses[pre_id].push_back(synapse_id);
@@ -63,33 +63,26 @@ int Network::addSynapse(int pre_id, int post_id) {
 
 // Paso de simulación - CLAVE: recibe el peso compartido
 void Network::step(double shared_weight) {
-    // 1. Calcular corrientes sinápticas para cada neurona
-    std::vector<double> currents(neurons.size(), 0.0);
-    
-    // Para cada neurona
+    // 1. Propagar spikes del paso anterior como conductancias
     for (size_t i = 0; i < neurons.size(); i++) {
-        // Si la neurona disparó en el paso anterior
         if (neurons[i].hasSpiked()) {
-            // Propagar el spike a todas sus sinapsis post-sinápticas
             for (int syn_id : post_synapses[i]) {
                 const Synapse& syn = synapses[syn_id];
                 int post_id = syn.getPostNeuronId();
-                
-                // AQUÍ usamos el peso compartido
-                currents[post_id] += syn.getCurrent(shared_weight);
+                double w = syn.getCurrent(shared_weight);
+                if (syn.isExcitatory())
+                    neurons[post_id].addExcConductance(w);
+                else
+                    neurons[post_id].addInhConductance(w);
             }
         }
     }
-    
-    // 2. Actualizar cada neurona
+
+    // 2. Integrar cada neurona
     for (size_t i = 0; i < neurons.size(); i++) {
-        // Agregar corriente sináptica
-        neurons[i].addCurrent(currents[i]);
-        
-        // Integrar la neurona
         neurons[i].step(dt);
     }
-    
+
     // 3. Avanzar el tiempo
     current_time += dt;
 }
@@ -117,7 +110,7 @@ void Network::reset() {
 // Establecer corriente de entrada a una neurona específica
 void Network::setInputCurrent(int neuron_id, double current) {
     if (neuron_id >= 0 && neuron_id < static_cast<int>(neurons.size())) {
-        neurons[neuron_id].addCurrent(current);
+        neurons[neuron_id].addExcConductance(current);
     }
 }
 
@@ -125,7 +118,7 @@ void Network::setInputCurrent(int neuron_id, double current) {
 void Network::setInputCurrents(const std::vector<double>& currents) {
     size_t n = std::min(currents.size(), input_neurons.size());
     for (size_t i = 0; i < n; i++) {
-        neurons[input_neurons[i]].addCurrent(currents[i]);
+        neurons[input_neurons[i]].addExcConductance(currents[i]);
     }
 }
 
@@ -225,7 +218,7 @@ void Network::applyInputSpikes(
             // Si el spike ocurre en este paso de tiempo (con tolerancia)
             if (std::abs(spike_time - current_time) < dt / 2.0) {
                 // Inyectar corriente fuerte para forzar spike
-                neurons[neuron_id].addCurrent(100.0);
+                neurons[neuron_id].addExcConductance(100.0);
             }
         }
     }

@@ -6,7 +6,7 @@ thread_local std::uniform_real_distribution<double> IzhikevichNeuron::uniform{-0
 
 IzhikevichNeuron::IzhikevichNeuron(NeuronType type, double i_offset, double noise,
                                    double tau_exc, double tau_inh)
-        : I_syn(0.0), i_offset(i_offset), noise(noise), spiked(false),
+        : i_offset(i_offset), noise(noise), spiked(false),
           g_exc(0.0), g_inh(0.0),
           tau_exc(tau_exc), tau_inh(tau_inh) {
     switch(type) {
@@ -41,7 +41,7 @@ IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d,
                                    double i_offset, double noise,
                                    double tau_exc, double tau_inh)
         : a(a), b(b), c(c), d(d), v(c), u(b*c),
-          I_syn(0.0), i_offset(i_offset), noise(noise), spiked(false),
+          i_offset(i_offset), noise(noise), spiked(false),
           g_exc(0.0), g_inh(0.0),
           tau_exc(tau_exc), tau_inh(tau_inh) {}
 
@@ -58,11 +58,16 @@ IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d,
 void IzhikevichNeuron::step(double dt) {
     spiked = false;
 
-    // Corriente total: excitatoria - inhibitoria + directa + offset + ruido
-    double I_total = g_exc - g_inh + I_syn + i_offset + noise * uniform(rng);
+
+    // Decaimiento exponencial de conductancias (tau * dg/dt = -g)
+    g_exc *= exp( -dt / tau_exc);
+    g_inh *= exp( -dt / tau_inh);
 
     // Integración de v y u (dos sub-pasos de dt/2)
     for (int i = 0; i < 2; i++) {
+        // Corriente total: excitatoria - inhibitoria + directa + offset + ruido
+        double I_total = g_exc - g_inh + i_offset + noise * uniform(rng);
+        
         double dv = (0.04 * v * v + 5.0 * v + 140.0 - u + I_total) * (dt / 2.0);
         v += dv;
 
@@ -76,19 +81,6 @@ void IzhikevichNeuron::step(double dt) {
         u += d;
     }
 
-    // Decaimiento exponencial de conductancias (tau * dg/dt = -g)
-    g_exc -= g_exc / tau_exc * dt;
-    g_inh -= g_inh / tau_inh * dt;
-
-    // Reset de corriente directa
-    I_syn = 0.0;
-}
-
-/**
- *  Agrega corriente directa a la neurona (modo corriente, backward compatible)
- */
-void IzhikevichNeuron::addCurrent(double current) {
-    I_syn += current;
 }
 
 /**
@@ -113,7 +105,6 @@ void IzhikevichNeuron::addInhConductance(double g) {
 void IzhikevichNeuron::reset() {
     v = c;
     u = b * v;
-    I_syn = 0.0;
     g_exc = 0.0;
     g_inh = 0.0;
     spiked = false;
