@@ -7,13 +7,13 @@ TEST_CASE("Neural network creation") {
     double dt = 1.0;
     Network net(dt);
 
-    int in1 = net.addInputNeuron();
-    int in2 = net.addInputNeuron();
+    int in1 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int in2 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
 
     int h1 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
     int h2 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
 
-    int out = net.addOutputNeuron();
+    int out = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
 
     net.addSynapse(in1, h1, /*excitatory=*/true);
     net.addSynapse(in1, h2, /*excitatory=*/true);
@@ -30,8 +30,8 @@ TEST_CASE("Neural network creation") {
 
 TEST_CASE("Synapse g_type is stored correctly") {
     Network net(1.0);
-    int a = net.addInputNeuron();
-    int b = net.addOutputNeuron();
+    int a = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int b = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
 
     int exc_id = net.addSynapse(a, b, /*excitatory=*/true);
     int inh_id = net.addSynapse(b, a, /*excitatory=*/false);
@@ -48,8 +48,8 @@ TEST_CASE("Excitatory synapse propagates spikes to output") {
     int spikeCount = 0;
 
     Network net(dt);
-    int input = net.addInputNeuron();
-    int output = net.addOutputNeuron();
+    int input = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int output = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
     net.addSynapse(input, output, /*excitatory=*/true);
 
     for (double t = 0; t < simulationTime; t += dt) {
@@ -71,8 +71,8 @@ TEST_CASE("Inhibitory synapse reduces output spiking") {
     int excSpikes = 0;
     {
         Network net(dt);
-        int input = net.addInputNeuron();
-        int output = net.addOutputNeuron();
+        int input = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+        int output = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
         net.addSynapse(input, output, /*excitatory=*/true);
 
         for (double t = 0; t < simulationTime; t += dt) {
@@ -86,9 +86,9 @@ TEST_CASE("Inhibitory synapse reduces output spiking") {
     int inhSpikes = 0;
     {
         Network net(dt);
-        int input = net.addInputNeuron();
-        int inh   = net.addHiddenNeuron();
-        int output = net.addOutputNeuron();
+        int input = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+        int inh   = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
+        int output = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
         net.addSynapse(input, output, /*excitatory=*/true);
         net.addSynapse(inh, output,   /*excitatory=*/false);
 

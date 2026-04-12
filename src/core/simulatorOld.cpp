@@ -7,9 +7,9 @@ Simulator::Simulator(double timestep) : dt(timestep), spikeCount(0) {
 
 void Simulator::generateTopology() {
     // Input layer
-    int in0 = net.addInputNeuron();
-    int in1 = net.addInputNeuron();
-    int in2 = net.addInputNeuron();
+    int in0 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int in1 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int in2 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
 
     // Hidden layers
     // Layer 0
@@ -36,7 +36,7 @@ void Simulator::generateTopology() {
     */
     
     // Output layer
-    int out = net.addOutputNeuron();
+    int out = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
     
     // Synapses
     net.addSynapse(in0, h0_0);

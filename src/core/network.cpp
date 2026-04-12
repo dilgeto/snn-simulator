@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include "../../include/core/network.hpp"
 
@@ -16,14 +17,16 @@ int Network::addNeuron(NeuronType type) {
     return id;
 }
 
-int Network::addInputNeuron() {
-    int id = addNeuron(NeuronType::REGULAR_SPIKING);
+// TODO: incluir la función de activación que se desee
+int Network::addInputNeuron(NeuronType type) {
+    int id = addNeuron(type);
     input_neurons.push_back(id);
     return id;
 }
 
-int Network::addOutputNeuron() {
-    int id = addNeuron(NeuronType::REGULAR_SPIKING);
+// TODO: incluir la función de activación que se desee
+int Network::addOutputNeuron(NeuronType type) {
+    int id = addNeuron(type);
     output_neurons.push_back(id);
     return id;
 }
@@ -252,4 +255,100 @@ void Network::fastReset() {
         neuron.reset();
     }
     current_time = 0.0;
+}
+
+// ===== ELIMINACIÓN DE TOPOLOGÍA =====
+
+bool Network::isIsolated(int id) const {
+    return post_synapses[id].empty() && pre_synapses[id].empty();
+}
+
+// Elimina una sinapsis y actualiza los mapeos de adyacencia (sin cascade).
+// Usa swap-and-pop para mantener vectores contiguos.
+void Network::removeSynapseOnly(int syn_id) {
+    int pre_id  = synapses[syn_id].getPreNeuronId();
+    int post_id = synapses[syn_id].getPostNeuronId();
+
+    // Borrar de las listas de adyacencia
+    auto& out = post_synapses[pre_id];
+    out.erase(std::remove(out.begin(), out.end(), syn_id), out.end());
+    auto& in = pre_synapses[post_id];
+    in.erase(std::remove(in.begin(), in.end(), syn_id), in.end());
+
+    int last = static_cast<int>(synapses.size()) - 1;
+    if (syn_id != last) {
+        // La última sinapsis se mueve a la posición syn_id; actualizar referencias
+        int lp = synapses[last].getPreNeuronId();
+        int lq = synapses[last].getPostNeuronId();
+        std::replace(post_synapses[lp].begin(), post_synapses[lp].end(), last, syn_id);
+        std::replace(pre_synapses[lq].begin(),  pre_synapses[lq].end(),  last, syn_id);
+        synapses[syn_id] = synapses[last];
+    }
+    synapses.pop_back();
+}
+
+// Elimina una neurona (asume que ya no tiene sinapsis) y actualiza índices (sin cascade).
+void Network::removeNeuronOnly(int neuron_id) {
+    // Borrar de su lista de rol
+    for (auto* list : {&input_neurons, &hidden_neurons, &output_neurons}) {
+        list->erase(std::remove(list->begin(), list->end(), neuron_id), list->end());
+    }
+
+    int last = static_cast<int>(neurons.size()) - 1;
+    if (neuron_id != last) {
+        // La última neurona se mueve a neuron_id; actualizar sinapsis y listas de rol
+        for (int sid : post_synapses[last])
+            synapses[sid].setPreNeuronId(neuron_id);
+        for (int sid : pre_synapses[last])
+            synapses[sid].setPostNeuronId(neuron_id);
+
+        for (auto* list : {&input_neurons, &hidden_neurons, &output_neurons})
+            std::replace(list->begin(), list->end(), last, neuron_id);
+
+        neurons[neuron_id]       = neurons[last];
+        post_synapses[neuron_id] = post_synapses[last];
+        pre_synapses[neuron_id]  = pre_synapses[last];
+    }
+    neurons.pop_back();
+    post_synapses.pop_back();
+    pre_synapses.pop_back();
+}
+
+void Network::cascadeRemoveIsolated() {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (int id : hidden_neurons) {
+            if (isIsolated(id)) {
+                removeNeuronOnly(id);
+                changed = true;
+                break;  // hidden_neurons cambió; reiniciar iteración
+            }
+        }
+    }
+}
+
+void Network::removeSynapse(int syn_id) {
+    if (syn_id < 0 || syn_id >= static_cast<int>(synapses.size())) {
+        std::cerr << "removeSynapse: ID inválido " << syn_id << std::endl;
+        return;
+    }
+    removeSynapseOnly(syn_id);
+    cascadeRemoveIsolated();
+}
+
+void Network::removeNeuron(int neuron_id) {
+    if (neuron_id < 0 || neuron_id >= static_cast<int>(neurons.size())) {
+        std::cerr << "removeNeuron: ID inválido " << neuron_id << std::endl;
+        return;
+    }
+
+    // Eliminar todas las sinapsis conectadas
+    while (!post_synapses[neuron_id].empty())
+        removeSynapseOnly(post_synapses[neuron_id][0]);
+    while (!pre_synapses[neuron_id].empty())
+        removeSynapseOnly(pre_synapses[neuron_id][0]);
+
+    removeNeuronOnly(neuron_id);
+    cascadeRemoveIsolated();
 }

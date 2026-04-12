@@ -45,6 +45,14 @@ void Simulator::reset() {
     }
 }
 
+void Simulator::removeSynapse(int syn_id) {
+    if (network) network->removeSynapse(syn_id);
+}
+
+void Simulator::removeNeuron(int neuron_id) {
+    if (network) network->removeNeuron(neuron_id);
+}
+
 // ===== SIMULACIÓN BÁSICA =====
 
 SimulationResult Simulator::simulate(

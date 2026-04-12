@@ -26,6 +26,12 @@ private:
     // Estado de simulación
     double current_time;
     double dt;
+
+    // Helpers internos de eliminación
+    void removeSynapseOnly(int syn_id);
+    void removeNeuronOnly(int neuron_id);
+    bool isIsolated(int neuron_id) const;
+    void cascadeRemoveIsolated();
     
 public:
     // Constructor
@@ -33,12 +39,16 @@ public:
     
     // Construcción de la red
     int addNeuron(NeuronType type);
-    int addInputNeuron();
-    int addOutputNeuron();
-    int addHiddenNeuron(NeuronType type = NeuronType::REGULAR_SPIKING);
+    int addInputNeuron(NeuronType type);
+    int addOutputNeuron(NeuronType type);
+    int addHiddenNeuron(NeuronType type);
     
     // Agregar sinapsis SIN peso
     int addSynapse(int pre_id, int post_id, bool excitatory = true);
+
+    // Eliminación de topología (con cascade: neuronas ocultas que queden aisladas se eliminan)
+    void removeSynapse(int syn_id);
+    void removeNeuron(int neuron_id);
     
     // Simulación - el peso compartido se pasa como parámetro
     void step(double shared_weight);
@@ -65,6 +75,8 @@ public:
     
     // Acceso directo (para análisis)
     const IzhikevichNeuron& getNeuron(int id) const { return neurons[id]; }
+    void setNeuronType(int neuron_id, NeuronType type) { neurons[neuron_id].setNeuronType(type); }
+    void setSynapseExcitatory(int syn_id, bool excitatory) { synapses[syn_id].setExcitatory(excitatory); }
     const Synapse& getSynapse(int id) const { return synapses[id]; }
     
     // Debug

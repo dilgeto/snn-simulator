@@ -101,6 +101,10 @@ public:
     
     // ===== UTILIDADES =====
     
+    // Eliminación de topología (delega a Network con cascade)
+    void removeSynapse(int syn_id);
+    void removeNeuron(int neuron_id);
+
     // Reset del simulador
     void reset();
     

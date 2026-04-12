@@ -45,6 +45,30 @@ IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d,
           g_exc(0.0), g_inh(0.0),
           tau_exc(tau_exc), tau_inh(tau_inh) {}
 
+void IzhikevichNeuron::setNeuronType(NeuronType type) {
+    switch(type) {
+        case NeuronType::REGULAR_SPIKING:
+            a = 0.02; b = 0.2; c = -65.0; d = 8.0; break;
+        case NeuronType::FAST_SPIKING:
+            a = 0.1;  b = 0.2; c = -65.0; d = 2.0; break;
+        case NeuronType::INTRINSICALLY_BURSTING:
+            a = 0.02; b = 0.2; c = -55.0; d = 4.0; break;
+        case NeuronType::CHATTERING:
+            a = 0.02; b = 0.2; c = -50.0; d = 2.0; break;
+        case NeuronType::LOW_THRESHOLD_SPIKING:
+            a = 0.02; b = 0.25; c = -65.0; d = 2.0; break;
+        case NeuronType::RESONATOR:
+            a = 0.1;  b = 0.26; c = -65.0; d = 2.0; break;
+        default:
+            a = 0.02; b = 0.2; c = -65.0; d = 8.0; break;
+    }
+    v = c;
+    u = b * v;
+    g_exc = 0.0;
+    g_inh = 0.0;
+    spiked = false;
+}
+
 /**
  *  Método de Euler (dos sub-pasos de dt/2 por precisión, como Izhikevich recomienda)
  *

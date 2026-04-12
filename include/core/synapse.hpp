@@ -22,6 +22,10 @@ public:
     int getPreNeuronId() const { return pre_neuron_id; }
     int getPostNeuronId() const { return post_neuron_id; }
     bool isExcitatory() const { return g_type; }
+
+    void setPreNeuronId(int id) { pre_neuron_id = id; }
+    void setPostNeuronId(int id) { post_neuron_id = id; }
+    void setExcitatory(bool excitatory) { g_type = excitatory; }
 };
 
 #endif

@@ -53,6 +53,8 @@ public:
     double getGExc() const { return g_exc; }
     double getGInh() const { return g_inh; }
 
+    void setNeuronType(NeuronType type);
+
     void setVoltage(double voltage) { v = voltage; }
     void setRecovery(double recovery) { u = recovery; }
     void setIOffset(double offset) { i_offset = offset; }
