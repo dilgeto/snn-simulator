@@ -24,13 +24,13 @@ int main(int argc, char** argv) {
     // Construir red: 2 inputs -> 2 hidden -> 1 output
     std::cout << "Construyendo red..." << std::endl;
     
-    int in1 = net.addInputNeuron();
-    int in2 = net.addInputNeuron();
+    int in1 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int in2 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
     
     int h1 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
     int h2 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
     
-    int out = net.addOutputNeuron();
+    int out = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
     
     // Conexiones (sin pesos)
     net.addSynapse(in1, h1);

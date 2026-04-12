@@ -30,13 +30,13 @@ int main() {
 
     // Construir SNN: 3 inputs (cos θ, sin θ, θ̇) → 2 hidden → 1 output
     Network net(1.0);
-    net.addInputNeuron();  // cos(theta)
-    net.addInputNeuron();  // sin(theta)
-    net.addInputNeuron();  // theta_dot
+    net.addInputNeuron(NeuronType::REGULAR_SPIKING);  // cos(theta)
+    net.addInputNeuron(NeuronType::REGULAR_SPIKING);  // sin(theta)
+    net.addInputNeuron(NeuronType::REGULAR_SPIKING);  // theta_dot
 
     int h0 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
     int h1 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-    int out = net.addOutputNeuron();
+    int out = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
 
     auto inputs = net.getInputNeuronIds();
     for (int in_id : inputs) {
