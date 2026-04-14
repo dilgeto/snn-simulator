@@ -53,6 +53,30 @@ void Simulator::removeNeuron(int neuron_id) {
     if (network) network->removeNeuron(neuron_id);
 }
 
+int Simulator::insertNeuron(int syn_id, NeuronType type) {
+    if (!network) return -1;
+    return network->insertNeuron(syn_id, type);
+}
+
+int Simulator::insertSynapse(int pre_id, int post_id, bool excitatory) {
+    if (!network) return -1;
+    return network->addSynapse(pre_id, post_id, excitatory);
+}
+
+void Simulator::deleteSynapse(int syn_id) {
+    if (network) network->removeSynapse(syn_id);
+}
+
+void Simulator::toggleSynapsePolarity(int syn_id) {
+    if (!network) return;
+    const Synapse& syn = network->getSynapse(syn_id);
+    network->setSynapseExcitatory(syn_id, !syn.isExcitatory());
+}
+
+void Simulator::changeActivation(int neuron_id, NeuronType type) {
+    if (network) network->setNeuronType(neuron_id, type);
+}
+
 // ===== SIMULACIÓN BÁSICA =====
 
 SimulationResult Simulator::simulate(

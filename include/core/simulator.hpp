@@ -105,6 +105,19 @@ public:
     void removeSynapse(int syn_id);
     void removeNeuron(int neuron_id);
 
+    // Mutaciones de topología
+    int insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING);
+    int insertSynapse(int pre_id, int post_id, bool excitatory = true);
+    void deleteSynapse(int syn_id);
+    void toggleSynapsePolarity(int syn_id);
+
+    // Mutaciones de parámetros
+    void changeActivation(int neuron_id, NeuronType type);
+
+    // Recurrencia
+    void setRecurrent(bool recurrent) { if (network) network->setRecurrent(recurrent); }
+    bool isRecurrent() const { return network && network->isRecurrent(); }
+
     // Reset del simulador
     void reset();
     

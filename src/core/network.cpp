@@ -2,8 +2,8 @@
 #include <iostream>
 #include "../../include/core/network.hpp"
 
-Network::Network(double timestep)
-    : current_time(0.0), dt(timestep) {
+Network::Network(double timestep, bool allow_recurrent)
+    : current_time(0.0), dt(timestep), allow_recurrent(allow_recurrent) {
 }
 
 int Network::addNeuron(NeuronType type) {
@@ -37,6 +37,21 @@ int Network::addHiddenNeuron(NeuronType type) {
     return id;
 }
 
+bool Network::canReach(int start, int target) const {
+    // DFS iterativo desde 'start' siguiendo sinapsis salientes
+    std::vector<bool> visited(neurons.size(), false);
+    std::vector<int> stack = {start};
+    while (!stack.empty()) {
+        int cur = stack.back(); stack.pop_back();
+        if (cur == target) return true;
+        if (visited[cur]) continue;
+        visited[cur] = true;
+        for (int syn_id : post_synapses[cur])
+            stack.push_back(synapses[syn_id].getPostNeuronId());
+    }
+    return false;
+}
+
 // Agregar sinapsis - SOLO topología, sin peso
 int Network::addSynapse(int pre_id, int post_id, bool excitatory) {
     // Validación
@@ -47,9 +62,16 @@ int Network::addSynapse(int pre_id, int post_id, bool excitatory) {
         return -1;
     }
     
-    // Evitar auto-conexiones (opcional)
+    // Evitar auto-conexiones
     if (pre_id == post_id) {
-        std::cerr << "Warning: Self-connection not allowed (" 
+        std::cerr << "Warning: Self-connection not allowed ("
+                  << pre_id << " -> " << post_id << ")" << std::endl;
+        return -1;
+    }
+
+    // En modo feed-forward, rechazar sinapsis que creen un ciclo
+    if (!allow_recurrent && canReach(post_id, pre_id)) {
+        std::cerr << "Warning: Recurrent connection rejected in feed-forward mode ("
                   << pre_id << " -> " << post_id << ")" << std::endl;
         return -1;
     }
@@ -255,6 +277,28 @@ void Network::fastReset() {
         neuron.reset();
     }
     current_time = 0.0;
+}
+
+// ===== MUTACIONES =====
+
+int Network::insertNeuron(int syn_id, NeuronType type) {
+    if (syn_id < 0 || syn_id >= static_cast<int>(synapses.size())) {
+        std::cerr << "insertNeuron: ID de sinapsis inválido " << syn_id << std::endl;
+        return -1;
+    }
+
+    int pre_id  = synapses[syn_id].getPreNeuronId();
+    int post_id = synapses[syn_id].getPostNeuronId();
+    bool exc    = synapses[syn_id].isExcitatory();
+
+    removeSynapseOnly(syn_id);           // syn_id ya no es válido a partir de aquí
+
+    int new_id = addHiddenNeuron(type);  // el nuevo nodo
+
+    addSynapse(pre_id, new_id,  exc);
+    addSynapse(new_id, post_id, exc);
+
+    return new_id;
 }
 
 // ===== ELIMINACIÓN DE TOPOLOGÍA =====
