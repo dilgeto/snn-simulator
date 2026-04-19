@@ -45,10 +45,6 @@ void Simulator::reset() {
     }
 }
 
-void Simulator::removeSynapse(int syn_id) {
-    if (network) network->removeSynapse(syn_id);
-}
-
 void Simulator::removeNeuron(int neuron_id) {
     if (network) network->removeNeuron(neuron_id);
 }
@@ -243,14 +239,6 @@ double Simulator::runEpisode(
     std::vector<double> current_state = initial_state;
     
     for (int step = 0; step < max_steps; step++) {
-        network->reset();
-        
-        // Codificar estado
-        auto encoded_state = encoder->encodeVector(current_state, 
-                                                   config.encoding_duration, 
-                                                   config.dt);
-        
-        // Simular red
         auto result = simulateEncoded(current_state, shared_weight, config.evaluation_duration);
         
         // Decodificar acción

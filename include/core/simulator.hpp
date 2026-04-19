@@ -100,18 +100,13 @@ public:
         std::function<double(const SimulationResult&)> fitness_func);
     
     // ===== UTILIDADES =====
-    
-    // Eliminación de topología (delega a Network con cascade)
-    void removeSynapse(int syn_id);
-    void removeNeuron(int neuron_id);
 
-    // Mutaciones de topología
+    // Mutaciones
     int insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING);
     int insertSynapse(int pre_id, int post_id, bool excitatory = true);
+    void removeNeuron(int neuron_id);
     void deleteSynapse(int syn_id);
     void toggleSynapsePolarity(int syn_id);
-
-    // Mutaciones de parámetros
     void changeActivation(int neuron_id, NeuronType type);
 
     // Recurrencia
