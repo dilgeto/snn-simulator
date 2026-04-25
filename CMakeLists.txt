@@ -14,12 +14,6 @@ enable_testing()
 find_package(CLI11 CONFIG REQUIRED)
 find_package(Catch2 3 REQUIRED)
 
-# RLTools (header-only)
-set(RL_TOOLS_INCLUDE_DIR external/rl-tools/include
-    CACHE PATH "Directorio de cabeceras de RLTools")
-add_library(rl_tools INTERFACE)
-target_include_directories(rl_tools INTERFACE ${RL_TOOLS_INCLUDE_DIR})
-
 # Core del simulador
 add_library(snn_core
     src/core/neuron.cpp
@@ -82,19 +76,6 @@ include(Catch)
 catch_discover_tests(snn_tests)
 
 set_target_properties(snn_simulator PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
-)
-
-# Evaluación del péndulo con RLTools
-add_executable(snn_pendulum
-    src/rl/pendulum_eval.cpp
-)
-target_link_libraries(snn_pendulum
-    PRIVATE
-        snn_engine
-        rl_tools
-)
-set_target_properties(snn_pendulum PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
 )
 
