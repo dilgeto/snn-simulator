@@ -1,6 +1,5 @@
 #include <CLI/CLI.hpp>
-#include "../../include/core/simulator.hpp"
-#include "CLI/CLI.hpp"
+#include "../../include/core/network.hpp"
 
 int main(int argc, char** argv) {
     CLI::App app{"Spiking Neural Network Simulator"};
@@ -19,20 +18,19 @@ int main(int argc, char** argv) {
 
     CLI11_PARSE(app, argc, argv);
 
-    /*
     // Se crea la red con el timestep definido
     Network net(dt);
     
     // Construir red: 2 inputs -> 2 hidden -> 1 output
     std::cout << "Construyendo red..." << std::endl;
     
-    int in1 = net.addInputNeuron();
-    int in2 = net.addInputNeuron();
+    int in1 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int in2 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
     
     int h1 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
     int h2 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
     
-    int out = net.addOutputNeuron();
+    int out = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
     
     // Conexiones (sin pesos)
     net.addSynapse(in1, h1);
@@ -55,11 +53,12 @@ int main(int argc, char** argv) {
         net.reset();
         
         int spike_count = 0;
-        
+        double input1 = 10.0, input2 = 10.0;
+
         // Simular por 100ms
-        for (double t = 0; t < time; t += 1.0) {
+        for (double t = 0; t < duration; t += 1.0) {
             // Aplicar corriente constante a las entradas
-            net.setInputCurrents({input1, input2});
+            net.setInputCurrents(std::vector<double>{input1, input2});
             
             // Paso con peso compartido
             net.step(weight);
@@ -73,13 +72,6 @@ int main(int argc, char** argv) {
         
         std::cout << "Total output spikes: " << spike_count << std::endl;
     }
-    */
     
-    Simulator simulator(dt);
-    
-    simulator.generateTopology();
-    
-    simulator.startSimulation(weight, duration);
-
     return 0;
 }

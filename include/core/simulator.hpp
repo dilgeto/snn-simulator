@@ -100,7 +100,19 @@ public:
         std::function<double(const SimulationResult&)> fitness_func);
     
     // ===== UTILIDADES =====
-    
+
+    // Mutaciones
+    int insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING);
+    int insertSynapse(int pre_id, int post_id, bool excitatory = true);
+    void removeNeuron(int neuron_id);
+    void deleteSynapse(int syn_id);
+    void toggleSynapsePolarity(int syn_id);
+    void changeActivation(int neuron_id, NeuronType type);
+
+    // Recurrencia
+    void setRecurrent(bool recurrent) { if (network) network->setRecurrent(recurrent); }
+    bool isRecurrent() const { return network && network->isRecurrent(); }
+
     // Reset del simulador
     void reset();
     

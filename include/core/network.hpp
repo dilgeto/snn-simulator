@@ -26,19 +26,40 @@ private:
     // Estado de simulación
     double current_time;
     double dt;
+
+    // Topología
+    bool allow_recurrent;
+
+    // Helpers internos de eliminación
+    void removeSynapseOnly(int syn_id);
+    void removeNeuronOnly(int neuron_id);
+    bool isIsolated(int neuron_id) const;
+    void cascadeRemoveIsolated();
+
+    // Devuelve true si 'target' es alcanzable desde 'start' siguiendo sinapsis salientes
+    bool canReach(int start, int target) const;
     
 public:
     // Constructor
-    Network(double timestep = 1.0);
+    Network(double timestep = 1.0, bool allow_recurrent = true);
     
     // Construcción de la red
     int addNeuron(NeuronType type);
-    int addInputNeuron();
-    int addOutputNeuron();
-    int addHiddenNeuron(NeuronType type = NeuronType::REGULAR_SPIKING);
+    int addInputNeuron(NeuronType type);
+    int addOutputNeuron(NeuronType type);
+    int addHiddenNeuron(NeuronType type);
     
     // Agregar sinapsis SIN peso
-    int addSynapse(int pre_id, int post_id);
+    int addSynapse(int pre_id, int post_id, bool excitatory = true);
+
+    // Eliminación de topología (con cascade: neuronas ocultas que queden aisladas se eliminan)
+    void removeSynapse(int syn_id);
+    void removeNeuron(int neuron_id);
+
+    // Mutación: inserta una neurona oculta partiendo una sinapsis existente.
+    // Elimina syn_id, crea la neurona y dos sinapsis heredando el g_type original.
+    // Devuelve el ID de la nueva neurona, o -1 si syn_id es inválido.
+    int insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING);
     
     // Simulación - el peso compartido se pasa como parámetro
     void step(double shared_weight);
@@ -55,6 +76,10 @@ public:
     std::vector<int> getOutputNeuronIds() const { return output_neurons; }
     std::vector<int> getInputNeuronIds() const { return input_neurons; }
     
+    // Recurrencia
+    void setRecurrent(bool recurrent) { allow_recurrent = recurrent; }
+    bool isRecurrent() const { return allow_recurrent; }
+
     // Información de la red
     size_t getNeuronCount() const { return neurons.size(); }
     size_t getSynapseCount() const { return synapses.size(); }
@@ -65,6 +90,8 @@ public:
     
     // Acceso directo (para análisis)
     const IzhikevichNeuron& getNeuron(int id) const { return neurons[id]; }
+    void setNeuronType(int neuron_id, NeuronType type) { neurons[neuron_id].setNeuronType(type); }
+    void setSynapseExcitatory(int syn_id, bool excitatory) { synapses[syn_id].setExcitatory(excitatory); }
     const Synapse& getSynapse(int id) const { return synapses[id]; }
     
     // Debug

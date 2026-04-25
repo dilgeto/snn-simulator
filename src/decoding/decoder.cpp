@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <limits>
 
-RLDecoder::RLDecoder(DecodingType type, double window_duration)
-    : type(type), window_duration(window_duration) {
+RLDecoder::RLDecoder(DecodingType type, double window_duration, int vote_windows)
+    : type(type), window_duration(window_duration), vote_windows(vote_windows) {
 }
 
 int RLDecoder::decodeDiscreteAction(
@@ -38,18 +38,38 @@ int RLDecoder::decodeDiscreteAction(
             return best_action;
         }
         
+        case DecodingType::VOTING: {
+            std::vector<int> votes(output_spikes.size(), 0);
+            double sub_window = window_duration / vote_windows;
+
+            for (int w = 0; w < vote_windows; w++) {
+                double t_start = w * sub_window;
+                double t_end   = t_start + sub_window;
+
+                int winner = -1;
+                int max_count = 0;
+                for (size_t i = 0; i < output_spikes.size(); i++) {
+                    int count = 0;
+                    for (double t : output_spikes[i]) {
+                        if (t >= t_start && t < t_end) count++;
+                    }
+                    if (count > max_count) { max_count = count; winner = static_cast<int>(i); }
+                }
+                if (winner >= 0) votes[winner]++;
+            }
+
+            return static_cast<int>(
+                std::max_element(votes.begin(), votes.end()) - votes.begin());
+        }
+
         case DecodingType::WINNER_TAKES_ALL:
         default: {
-            // Similar a spike count pero normalizado por tiempo
             double max_rate = 0.0;
             int best_action = 0;
-            
+
             for (size_t i = 0; i < output_spikes.size(); i++) {
-                double rate = output_spikes[i].size() / window_duration * 1000.0; // Hz
-                if (rate > max_rate) {
-                    max_rate = rate;
-                    best_action = i;
-                }
+                double rate = output_spikes[i].size() / window_duration * 1000.0;
+                if (rate > max_rate) { max_rate = rate; best_action = i; }
             }
             return best_action;
         }

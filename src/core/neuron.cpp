@@ -1,9 +1,14 @@
 #include "../../include/core/neuron.hpp"
 
-/**
- *
- */
-IzhikevichNeuron::IzhikevichNeuron(NeuronType type) : I_syn(0.0), spiked(false) {
+// Definición de miembros estáticos thread-local
+thread_local std::mt19937 IzhikevichNeuron::rng{std::random_device{}()};
+thread_local std::uniform_real_distribution<double> IzhikevichNeuron::uniform{-0.5, 0.5};
+
+IzhikevichNeuron::IzhikevichNeuron(NeuronType type, double i_offset, double noise,
+                                   double tau_exc, double tau_inh)
+        : i_offset(i_offset), noise(noise), spiked(false),
+          g_exc(0.0), g_inh(0.0),
+          tau_exc(tau_exc), tau_inh(tau_inh) {
     switch(type) {
         case NeuronType::REGULAR_SPIKING:
             a = 0.02; b = 0.2; c = -65.0; d = 8.0;
@@ -28,55 +33,94 @@ IzhikevichNeuron::IzhikevichNeuron(NeuronType type) : I_syn(0.0), spiked(false) 
             break;
     }
 
-    // Inicializar estado en reposo
     v = c;
     u = b * v;
 }
 
-/**
- *  Inicializador para una neurona personalizada
- */
-IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d) 
-        : a(a), b(b), c(c), d(d), v(c), u(b*c), I_syn(0.0), spiked(false) {}
+IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d,
+                                   double i_offset, double noise,
+                                   double tau_exc, double tau_inh)
+        : a(a), b(b), c(c), d(d), v(c), u(b*c),
+          i_offset(i_offset), noise(noise), spiked(false),
+          g_exc(0.0), g_inh(0.0),
+          tau_exc(tau_exc), tau_inh(tau_inh) {}
+
+void IzhikevichNeuron::setNeuronType(NeuronType type) {
+    switch(type) {
+        case NeuronType::REGULAR_SPIKING:
+            a = 0.02; b = 0.2; c = -65.0; d = 8.0; break;
+        case NeuronType::FAST_SPIKING:
+            a = 0.1;  b = 0.2; c = -65.0; d = 2.0; break;
+        case NeuronType::INTRINSICALLY_BURSTING:
+            a = 0.02; b = 0.2; c = -55.0; d = 4.0; break;
+        case NeuronType::CHATTERING:
+            a = 0.02; b = 0.2; c = -50.0; d = 2.0; break;
+        case NeuronType::LOW_THRESHOLD_SPIKING:
+            a = 0.02; b = 0.25; c = -65.0; d = 2.0; break;
+        case NeuronType::RESONATOR:
+            a = 0.1;  b = 0.26; c = -65.0; d = 2.0; break;
+        default:
+            a = 0.02; b = 0.2; c = -65.0; d = 8.0; break;
+    }
+    v = c;
+    u = b * v;
+    g_exc = 0.0;
+    g_inh = 0.0;
+    spiked = false;
+}
 
 /**
- *  Método de Euler
+ *  Método de Euler (dos sub-pasos de dt/2 por precisión, como Izhikevich recomienda)
+ *
+ *  Corriente total (como ANNarchy):
+ *    I_total = g_exc - g_inh + I_syn + i_offset + noise * Uniform(-0.5, 0.5)
+ *
+ *  Decaimiento de conductancias (Euler de tau*dg/dt = -g):
+ *    g_exc -= g_exc / tau_exc * dt
+ *    g_inh -= g_inh / tau_inh * dt
  */
 void IzhikevichNeuron::step(double dt) {
     spiked = false;
 
-    // verificar si hay spike
-    if (v >= V_THRESHOLD) {
-        spiked = true;
-        v = c; // Reset del voltaje
-        u += d; // Reset de la recuperación
-    }
 
-    // Ecuaciones de Izhikevich
-    // dv/dt = 0.04*v^2 + 5*v + 140 - u + I
-    // du/dt = a * (b*v - u)
+    // Decaimiento exponencial de conductancias (tau * dg/dt = -g)
+    g_exc *= exp( -dt / tau_exc);
+    g_inh *= exp( -dt / tau_inh);
 
-    // Integración de v (dos pasos para mayor precisión)
-    // Izhikevich recomienda usar dt = 0.5ms o ods pasos de 0.5ms
-
+    // Integración de v y u (dos sub-pasos de dt/2)
     for (int i = 0; i < 2; i++) {
-        double dv = (0.04 * v * v + 5.0 * v + 140.0 - u + I_syn) * (dt / 2.0);
+        // Corriente total: excitatoria - inhibitoria + directa + offset + ruido
+        double I_total = g_exc - g_inh + i_offset + noise * uniform(rng);
+        
+        double dv = (0.04 * v * v + 5.0 * v + 140.0 - u + I_total) * (dt / 2.0);
         v += dv;
 
-        // Actualizar u
         double du = a * (b * v - u) * (dt / 2.0);
         u += du;
     }
 
-    // Reset de corriente sináptica (se acumula cada paso)
-    I_syn = 0.0;
+    if (v >= V_THRESHOLD) {
+        spiked = true;
+        v = c;
+        u += d;
+    }
+
 }
 
 /**
- *  Agrega corriente a la neurona
+ *  Acumula conductancia excitatoria (AMPA) — llamar antes de step()
+ *  cuando dispara una neurona presináptica excitatoria
  */
-void IzhikevichNeuron::addCurrent(double current) {
-    I_syn += current;
+void IzhikevichNeuron::addExcConductance(double g) {
+    g_exc += g;
+}
+
+/**
+ *  Acumula conductancia inhibitoria (INH) — llamar antes de step()
+ *  cuando dispara una neurona presináptica inhibitoria
+ */
+void IzhikevichNeuron::addInhConductance(double g) {
+    g_inh += g;
 }
 
 /**
@@ -85,6 +129,7 @@ void IzhikevichNeuron::addCurrent(double current) {
 void IzhikevichNeuron::reset() {
     v = c;
     u = b * v;
-    I_syn = 0.0;
+    g_exc = 0.0;
+    g_inh = 0.0;
     spiked = false;
 }

@@ -1,8 +1,9 @@
+#include <algorithm>
 #include <iostream>
 #include "../../include/core/network.hpp"
 
-Network::Network(double timestep)
-    : current_time(0.0), dt(timestep) {
+Network::Network(double timestep, bool allow_recurrent)
+    : current_time(0.0), dt(timestep), allow_recurrent(allow_recurrent) {
 }
 
 int Network::addNeuron(NeuronType type) {
@@ -16,14 +17,16 @@ int Network::addNeuron(NeuronType type) {
     return id;
 }
 
-int Network::addInputNeuron() {
-    int id = addNeuron(NeuronType::REGULAR_SPIKING);
+// TODO: incluir la función de activación que se desee
+int Network::addInputNeuron(NeuronType type) {
+    int id = addNeuron(type);
     input_neurons.push_back(id);
     return id;
 }
 
-int Network::addOutputNeuron() {
-    int id = addNeuron(NeuronType::REGULAR_SPIKING);
+// TODO: incluir la función de activación que se desee
+int Network::addOutputNeuron(NeuronType type) {
+    int id = addNeuron(type);
     output_neurons.push_back(id);
     return id;
 }
@@ -34,8 +37,23 @@ int Network::addHiddenNeuron(NeuronType type) {
     return id;
 }
 
+bool Network::canReach(int start, int target) const {
+    // DFS iterativo desde 'start' siguiendo sinapsis salientes
+    std::vector<bool> visited(neurons.size(), false);
+    std::vector<int> stack = {start};
+    while (!stack.empty()) {
+        int cur = stack.back(); stack.pop_back();
+        if (cur == target) return true;
+        if (visited[cur]) continue;
+        visited[cur] = true;
+        for (int syn_id : post_synapses[cur])
+            stack.push_back(synapses[syn_id].getPostNeuronId());
+    }
+    return false;
+}
+
 // Agregar sinapsis - SOLO topología, sin peso
-int Network::addSynapse(int pre_id, int post_id) {
+int Network::addSynapse(int pre_id, int post_id, bool excitatory) {
     // Validación
     if (pre_id < 0 || pre_id >= static_cast<int>(neurons.size()) ||
         post_id < 0 || post_id >= static_cast<int>(neurons.size())) {
@@ -44,15 +62,22 @@ int Network::addSynapse(int pre_id, int post_id) {
         return -1;
     }
     
-    // Evitar auto-conexiones (opcional)
+    // Evitar auto-conexiones
     if (pre_id == post_id) {
-        std::cerr << "Warning: Self-connection not allowed (" 
+        std::cerr << "Warning: Self-connection not allowed ("
+                  << pre_id << " -> " << post_id << ")" << std::endl;
+        return -1;
+    }
+
+    // En modo feed-forward, rechazar sinapsis que creen un ciclo
+    if (!allow_recurrent && canReach(post_id, pre_id)) {
+        std::cerr << "Warning: Recurrent connection rejected in feed-forward mode ("
                   << pre_id << " -> " << post_id << ")" << std::endl;
         return -1;
     }
     
     int synapse_id = synapses.size();
-    synapses.emplace_back(pre_id, post_id);
+    synapses.emplace_back(pre_id, post_id, excitatory);
     
     // Actualizar mapeos
     post_synapses[pre_id].push_back(synapse_id);
@@ -63,33 +88,26 @@ int Network::addSynapse(int pre_id, int post_id) {
 
 // Paso de simulación - CLAVE: recibe el peso compartido
 void Network::step(double shared_weight) {
-    // 1. Calcular corrientes sinápticas para cada neurona
-    std::vector<double> currents(neurons.size(), 0.0);
-    
-    // Para cada neurona
+    // 1. Propagar spikes del paso anterior como conductancias
     for (size_t i = 0; i < neurons.size(); i++) {
-        // Si la neurona disparó en el paso anterior
         if (neurons[i].hasSpiked()) {
-            // Propagar el spike a todas sus sinapsis post-sinápticas
             for (int syn_id : post_synapses[i]) {
                 const Synapse& syn = synapses[syn_id];
                 int post_id = syn.getPostNeuronId();
-                
-                // AQUÍ usamos el peso compartido
-                currents[post_id] += syn.getCurrent(shared_weight);
+                double w = syn.getCurrent(shared_weight);
+                if (syn.isExcitatory())
+                    neurons[post_id].addExcConductance(w);
+                else
+                    neurons[post_id].addInhConductance(w);
             }
         }
     }
-    
-    // 2. Actualizar cada neurona
+
+    // 2. Integrar cada neurona
     for (size_t i = 0; i < neurons.size(); i++) {
-        // Agregar corriente sináptica
-        neurons[i].addCurrent(currents[i]);
-        
-        // Integrar la neurona
         neurons[i].step(dt);
     }
-    
+
     // 3. Avanzar el tiempo
     current_time += dt;
 }
@@ -117,7 +135,7 @@ void Network::reset() {
 // Establecer corriente de entrada a una neurona específica
 void Network::setInputCurrent(int neuron_id, double current) {
     if (neuron_id >= 0 && neuron_id < static_cast<int>(neurons.size())) {
-        neurons[neuron_id].addCurrent(current);
+        neurons[neuron_id].addExcConductance(current);
     }
 }
 
@@ -125,7 +143,7 @@ void Network::setInputCurrent(int neuron_id, double current) {
 void Network::setInputCurrents(const std::vector<double>& currents) {
     size_t n = std::min(currents.size(), input_neurons.size());
     for (size_t i = 0; i < n; i++) {
-        neurons[input_neurons[i]].addCurrent(currents[i]);
+        neurons[input_neurons[i]].addExcConductance(currents[i]);
     }
 }
 
@@ -225,7 +243,7 @@ void Network::applyInputSpikes(
             // Si el spike ocurre en este paso de tiempo (con tolerancia)
             if (std::abs(spike_time - current_time) < dt / 2.0) {
                 // Inyectar corriente fuerte para forzar spike
-                neurons[neuron_id].addCurrent(100.0);
+                neurons[neuron_id].addExcConductance(100.0);
             }
         }
     }
@@ -259,4 +277,122 @@ void Network::fastReset() {
         neuron.reset();
     }
     current_time = 0.0;
+}
+
+// ===== MUTACIONES =====
+
+int Network::insertNeuron(int syn_id, NeuronType type) {
+    if (syn_id < 0 || syn_id >= static_cast<int>(synapses.size())) {
+        std::cerr << "insertNeuron: ID de sinapsis inválido " << syn_id << std::endl;
+        return -1;
+    }
+
+    int pre_id  = synapses[syn_id].getPreNeuronId();
+    int post_id = synapses[syn_id].getPostNeuronId();
+    bool exc    = synapses[syn_id].isExcitatory();
+
+    removeSynapseOnly(syn_id);           // syn_id ya no es válido a partir de aquí
+
+    int new_id = addHiddenNeuron(type);  // el nuevo nodo
+
+    addSynapse(pre_id, new_id,  exc);
+    addSynapse(new_id, post_id, exc);
+
+    return new_id;
+}
+
+// ===== ELIMINACIÓN DE TOPOLOGÍA =====
+
+bool Network::isIsolated(int id) const {
+    return post_synapses[id].empty() && pre_synapses[id].empty();
+}
+
+// Elimina una sinapsis y actualiza los mapeos de adyacencia (sin cascade).
+// Usa swap-and-pop para mantener vectores contiguos.
+void Network::removeSynapseOnly(int syn_id) {
+    int pre_id  = synapses[syn_id].getPreNeuronId();
+    int post_id = synapses[syn_id].getPostNeuronId();
+
+    // Borrar de las listas de adyacencia
+    auto& out = post_synapses[pre_id];
+    out.erase(std::remove(out.begin(), out.end(), syn_id), out.end());
+    auto& in = pre_synapses[post_id];
+    in.erase(std::remove(in.begin(), in.end(), syn_id), in.end());
+
+    int last = static_cast<int>(synapses.size()) - 1;
+    if (syn_id != last) {
+        // La última sinapsis se mueve a la posición syn_id; actualizar referencias
+        int lp = synapses[last].getPreNeuronId();
+        int lq = synapses[last].getPostNeuronId();
+        std::replace(post_synapses[lp].begin(), post_synapses[lp].end(), last, syn_id);
+        std::replace(pre_synapses[lq].begin(),  pre_synapses[lq].end(),  last, syn_id);
+        synapses[syn_id] = synapses[last];
+    }
+    synapses.pop_back();
+}
+
+// Elimina una neurona (asume que ya no tiene sinapsis) y actualiza índices (sin cascade).
+void Network::removeNeuronOnly(int neuron_id) {
+    // Borrar de su lista de rol
+    for (auto* list : {&input_neurons, &hidden_neurons, &output_neurons}) {
+        list->erase(std::remove(list->begin(), list->end(), neuron_id), list->end());
+    }
+
+    int last = static_cast<int>(neurons.size()) - 1;
+    if (neuron_id != last) {
+        // La última neurona se mueve a neuron_id; actualizar sinapsis y listas de rol
+        for (int sid : post_synapses[last])
+            synapses[sid].setPreNeuronId(neuron_id);
+        for (int sid : pre_synapses[last])
+            synapses[sid].setPostNeuronId(neuron_id);
+
+        for (auto* list : {&input_neurons, &hidden_neurons, &output_neurons})
+            std::replace(list->begin(), list->end(), last, neuron_id);
+
+        neurons[neuron_id]       = neurons[last];
+        post_synapses[neuron_id] = post_synapses[last];
+        pre_synapses[neuron_id]  = pre_synapses[last];
+    }
+    neurons.pop_back();
+    post_synapses.pop_back();
+    pre_synapses.pop_back();
+}
+
+void Network::cascadeRemoveIsolated() {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (int id : hidden_neurons) {
+            if (isIsolated(id)) {
+                removeNeuronOnly(id);
+                changed = true;
+                break;  // hidden_neurons cambió; reiniciar iteración
+            }
+        }
+    }
+}
+
+void Network::removeSynapse(int syn_id) {
+    if (syn_id < 0 || syn_id >= static_cast<int>(synapses.size())) {
+        std::cerr << "removeSynapse: ID inválido " << syn_id << std::endl;
+        return;
+    }
+    removeSynapseOnly(syn_id);
+    cascadeRemoveIsolated();
+}
+
+void Network::removeNeuron(int neuron_id) {
+    if (neuron_id < 0 || neuron_id >= static_cast<int>(neurons.size())) {
+        std::cerr << "removeNeuron: ID inválido " << neuron_id << std::endl;
+        return;
+    }
+
+    // Eliminar todas las sinapsis conectadas
+    while (!post_synapses[neuron_id].empty())
+        removeSynapseOnly(post_synapses[neuron_id][0]);
+    while (!pre_synapses[neuron_id].empty())
+        removeSynapseOnly(pre_synapses[neuron_id][0]);
+
+    removeNeuronOnly(neuron_id);
+    cascadeRemoveIsolated();
 }
