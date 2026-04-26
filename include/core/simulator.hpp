@@ -48,6 +48,9 @@ public:
     explicit Simulator(Network* net, const SimulationConfig& cfg = SimulationConfig());
     Simulator(double dt = 1.0);
     ~Simulator();
+
+    // Devuelve un nuevo Simulator con topología copiada y estado dinámico reseteado
+    Simulator* clone() const;
     
     // Configuración
     void setNetwork(Network* net, bool take_ownership = false);

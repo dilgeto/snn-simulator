@@ -19,6 +19,14 @@ Simulator::~Simulator() {
     }
 }
 
+Simulator* Simulator::clone() const {
+    Network* net_copy = network ? network->clone() : nullptr;
+    Simulator* copy = new Simulator(net_copy, config);
+    copy->owns_network = true;
+    if (net_copy) net_copy->fastReset();
+    return copy;
+}
+
 void Simulator::setNetwork(Network* net, bool take_ownership) {
     if (owns_network && network) {
         delete network;

@@ -40,8 +40,9 @@ private:
     bool canReach(int start, int target) const;
     
 public:
-    // Constructor
+    // Constructor y copia
     Network(double timestep = 1.0, bool allow_recurrent = true);
+    Network* clone() const { return new Network(*this); }
     
     // Construcción de la red
     int addNeuron(NeuronType type);
