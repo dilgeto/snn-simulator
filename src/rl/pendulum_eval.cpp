@@ -72,7 +72,7 @@ int main() {
             };
 
             // Simular SNN durante 50 ms con el peso compartido
-            auto result = sim.simulate(currents, weight, 50.0);
+            auto result = sim.simulate(0, currents, weight, 50.0);
 
             // Decodificar: tasa de spikes → torque normalizado en [-1, 1]
             double action_value = 0.0;

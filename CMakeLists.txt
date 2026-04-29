@@ -13,6 +13,7 @@ enable_testing()
 
 find_package(CLI11 CONFIG REQUIRED)
 find_package(Catch2 3 REQUIRED)
+find_package(OpenMP REQUIRED)
 
 # RLTools (header-only)
 set(RL_TOOLS_INCLUDE_DIR external/rl-tools/include
@@ -55,6 +56,7 @@ target_link_libraries(snn_engine
     PUBLIC
         snn_core
         snn_encoding
+        OpenMP::OpenMP_CXX
 )
 
 # Simulador principal
