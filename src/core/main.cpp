@@ -1,77 +1,102 @@
 #include <CLI/CLI.hpp>
+#include <iostream>
+#include <chrono>
+#include <omp.h>
 #include "../../include/core/network.hpp"
+#include "../../include/core/simulator.hpp"
+
+static Network* buildBaseNetwork(double dt) {
+    Network* net = new Network(dt);
+    int in1 = net->addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int in2 = net->addInputNeuron(NeuronType::REGULAR_SPIKING);
+    int h1  = net->addHiddenNeuron(NeuronType::REGULAR_SPIKING);
+    int h2  = net->addHiddenNeuron(NeuronType::REGULAR_SPIKING);
+    int out = net->addOutputNeuron(NeuronType::REGULAR_SPIKING);
+    net->addSynapse(in1, h1);
+    net->addSynapse(in1, h2);
+    net->addSynapse(in2, h1);
+    net->addSynapse(in2, h2);
+    net->addSynapse(h1,  out);
+    net->addSynapse(h2,  out);
+    return net;
+}
 
 int main(int argc, char** argv) {
-    CLI::App app{"Spiking Neural Network Simulator"};
+    CLI::App app{"SNN parallel simulation demo"};
 
-    // Variables a utilizar
-    double duration = 100.0;
-    double dt = 1.0;
-    double weight = 1.0;
+    double duration   = 100.0;
+    double dt         = 1.0;
+    double weight     = 20.0;
+    int    pop_size   = 8;
 
-    app.add_option("-t,--duration", duration, "Total duration of simulation")
-        ->check(CLI::PositiveNumber);
-    app.add_option("-d,--timestep", dt, "Timestep")
-        ->check(CLI::PositiveNumber);
-    app.add_option("-w,--weight", weight, "Weight")
-        ->check(CLI::Number);
+    app.add_option("-t,--duration", duration,  "Duración de simulación (ms)")->check(CLI::PositiveNumber);
+    app.add_option("-d,--timestep", dt,         "Timestep (ms)")->check(CLI::PositiveNumber);
+    app.add_option("-w,--weight",   weight,     "Peso compartido")->check(CLI::Number);
+    app.add_option("-p,--pop",      pop_size,   "Tamaño de la población")->check(CLI::PositiveNumber);
 
     CLI11_PARSE(app, argc, argv);
 
-    // Se crea la red con el timestep definido
-    Network net(dt);
-    
-    // Construir red: 2 inputs -> 2 hidden -> 1 output
-    std::cout << "Construyendo red..." << std::endl;
-    
-    int in1 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
-    int in2 = net.addInputNeuron(NeuronType::REGULAR_SPIKING);
-    
-    int h1 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-    int h2 = net.addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-    
-    int out = net.addOutputNeuron(NeuronType::REGULAR_SPIKING);
-    
-    // Conexiones (sin pesos)
-    net.addSynapse(in1, h1);
-    net.addSynapse(in1, h2);
-    net.addSynapse(in2, h1);
-    net.addSynapse(in2, h2);
-    net.addSynapse(h1, out);
-    net.addSynapse(h2, out);
-    
-    net.printInfo();
-    net.printTopology();
-    
-    // Evaluar con diferentes pesos (típico en WANN)
-    //std::vector<double> test_weights = {-2.0, -1.0, 0.0, 1.0, 2.0, 5.0, 10.0};
-    std::vector<double> test_weights = {20.0};
-    
-    for (double weight : test_weights) {
-        std::cout << "\n=== Evaluando con peso compartido: " << weight << " ===" << std::endl;
-        
-        net.reset();
-        
-        int spike_count = 0;
-        double input1 = 10.0, input2 = 10.0;
+    // ── Construir población ────────────────────────────────────────────────
+    SimulationConfig cfg;
+    cfg.dt                  = dt;
+    cfg.evaluation_duration = duration;
 
-        // Simular por 100ms
-        for (double t = 0; t < duration; t += 1.0) {
-            // Aplicar corriente constante a las entradas
-            net.setInputCurrents(std::vector<double>{input1, input2});
-            
-            // Paso con peso compartido
-            net.step(weight);
-            
-            // Contar spikes de salida
-            auto output_spikes = net.getOutputSpikes();
-            if (output_spikes[0]) {
-                spike_count++;
-            }
-        }
-        
-        std::cout << "Total output spikes: " << spike_count << std::endl;
+    Simulator sim(cfg);
+
+    // Red base: igual para todos; cada clon es independiente
+    Network* base = buildBaseNetwork(dt);
+    sim.addNetwork(base, /*take_ownership=*/true);
+
+    for (int i = 1; i < pop_size; i++)
+        sim.cloneNetwork(0);
+
+    // Aplicar una mutación distinta a cada individuo para que no sean idénticas
+    for (int i = 0; i < pop_size; i++) {
+        Individual ind = sim.getIndividual(i);
+        // Alterna tipo de neurona oculta según el índice
+        NeuronType t = (i % 2 == 0) ? NeuronType::FAST_SPIKING
+                                     : NeuronType::CHATTERING;
+        ind.changeActivation(2, t);   // neurona oculta h1
     }
-    
+
+    std::cout << "Población: " << sim.getNetworkCount() << " redes\n";
+    std::cout << "Hebras OpenMP disponibles: " << omp_get_max_threads() << "\n\n";
+
+    std::vector<double> inputs = {10.0, 10.0};
+
+    // ── Evaluación secuencial (referencia) ────────────────────────────────
+    auto t0 = std::chrono::high_resolution_clock::now();
+
+    std::vector<SimulationResult> seq_results(pop_size);
+    for (int i = 0; i < pop_size; i++)
+        seq_results[i] = sim.simulate(i, inputs, weight, duration);
+
+    double seq_ms = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now() - t0).count();
+
+    // ── Evaluación paralela ────────────────────────────────────────────────
+    sim.resetAll();
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+
+    auto par_results = sim.simulateAll(inputs, weight, duration);
+
+    double par_ms = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now() - t1).count();
+
+    // ── Resultados ─────────────────────────────────────────────────────────
+    std::cout << "Red | Spikes (seq) | Spikes (par)\n";
+    std::cout << "----+-------------+-------------\n";
+    for (int i = 0; i < pop_size; i++) {
+        std::cout << "  " << i
+                  << " |     " << static_cast<int>(seq_results[i].total_spikes)
+                  << "       |     " << static_cast<int>(par_results[i].total_spikes)
+                  << "\n";
+    }
+
+    std::cout << "\nTiempo secuencial: " << seq_ms << " ms\n";
+    std::cout << "Tiempo paralelo:   " << par_ms << " ms\n";
+    std::cout << "Speedup:           " << seq_ms / par_ms << "x\n";
+
     return 0;
 }
