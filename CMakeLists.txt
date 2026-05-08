@@ -73,6 +73,7 @@ target_link_libraries(snn_simulator
 add_executable(snn_tests
     tests/core/networkTests.cpp
     tests/core/neuronTests.cpp
+    tests/core/izhikevichTests.cpp
 )
 target_link_libraries(snn_tests
     PRIVATE
@@ -97,6 +98,19 @@ target_link_libraries(snn_pendulum
         rl_tools
 )
 set_target_properties(snn_pendulum PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
+)
+
+# Evaluación del acrobot con RLTools
+add_executable(snn_acrobot
+    src/rl/acrobot_eval.cpp
+)
+target_link_libraries(snn_acrobot
+    PRIVATE
+        snn_engine
+        rl_tools
+)
+set_target_properties(snn_acrobot PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
 )
 

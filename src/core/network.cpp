@@ -90,22 +90,23 @@ int Network::addSynapse(int pre_id, int post_id, bool excitatory) {
 void Network::step(double shared_weight) {
     // 1. Propagar spikes del paso anterior como conductancias
     for (size_t i = 0; i < neurons.size(); i++) {
-        if (neurons[i].hasSpiked()) {
-            for (int syn_id : post_synapses[i]) {
-                const Synapse& syn = synapses[syn_id];
-                int post_id = syn.getPostNeuronId();
-                double w = syn.getCurrent(shared_weight);
-                if (syn.isExcitatory())
-                    neurons[post_id].addExcConductance(w);
-                else
-                    neurons[post_id].addInhConductance(w);
-            }
+        if (!neurons[i].isEnabled() || !neurons[i].hasSpiked()) continue;
+        for (int syn_id : post_synapses[i]) {
+            const Synapse& syn = synapses[syn_id];
+            if (!syn.isEnabled()) continue;
+            int post_id = syn.getPostNeuronId();
+            if (!neurons[post_id].isEnabled()) continue;
+            double w = syn.getCurrent(shared_weight);
+            if (syn.isExcitatory())
+                neurons[post_id].addExcConductance(w);
+            else
+                neurons[post_id].addInhConductance(w);
         }
     }
 
-    // 2. Integrar cada neurona
+    // 2. Integrar cada neurona habilitada
     for (size_t i = 0; i < neurons.size(); i++) {
-        neurons[i].step(dt);
+        if (neurons[i].isEnabled()) neurons[i].step(dt);
     }
 
     // 3. Avanzar el tiempo
@@ -143,7 +144,8 @@ void Network::setInputCurrent(int neuron_id, double current) {
 void Network::setInputCurrents(const std::vector<double>& currents) {
     size_t n = std::min(currents.size(), input_neurons.size());
     for (size_t i = 0; i < n; i++) {
-        neurons[input_neurons[i]].addExcConductance(currents[i]);
+        if (neurons[input_neurons[i]].isEnabled())
+            neurons[input_neurons[i]].addExcConductance(currents[i]);
     }
 }
 
@@ -160,7 +162,8 @@ std::vector<bool> Network::getSpikes() const {
 std::vector<bool> Network::getOutputSpikes() const {
     std::vector<bool> spikes(output_neurons.size());
     for (size_t i = 0; i < output_neurons.size(); i++) {
-        spikes[i] = neurons[output_neurons[i]].hasSpiked();
+        const auto& n = neurons[output_neurons[i]];
+        spikes[i] = n.isEnabled() && n.hasSpiked();
     }
     return spikes;
 }
@@ -281,24 +284,59 @@ void Network::fastReset() {
 
 // ===== MUTACIONES =====
 
-int Network::insertNeuron(int syn_id, NeuronType type) {
+Network::NeuronInsertionResult Network::insertNeuron(int syn_id, NeuronType type) {
+    NeuronInsertionResult fail{-1, -1, -1, -1};
     if (syn_id < 0 || syn_id >= static_cast<int>(synapses.size())) {
         std::cerr << "insertNeuron: ID de sinapsis inválido " << syn_id << std::endl;
-        return -1;
+        return fail;
     }
 
     int pre_id  = synapses[syn_id].getPreNeuronId();
     int post_id = synapses[syn_id].getPostNeuronId();
     bool exc    = synapses[syn_id].isExcitatory();
 
-    removeSynapseOnly(syn_id);           // syn_id ya no es válido a partir de aquí
+    // Deshabilitar la sinapsis original (reversible)
+    synapses[syn_id].disable();
 
-    int new_id = addHiddenNeuron(type);  // el nuevo nodo
+    int new_id  = addHiddenNeuron(type);
+    int syn_in  = addSynapse(pre_id, new_id,  exc);
+    int syn_out = addSynapse(new_id, post_id, exc);
 
-    addSynapse(pre_id, new_id,  exc);
-    addSynapse(new_id, post_id, exc);
+    return {new_id, syn_in, syn_out, syn_id};
+}
 
-    return new_id;
+// ===== HABILITACIÓN / DESHABILITACIÓN (WANN) =====
+
+void Network::disableSynapse(int syn_id) {
+    if (syn_id >= 0 && syn_id < static_cast<int>(synapses.size()))
+        synapses[syn_id].disable();
+}
+
+void Network::enableSynapse(int syn_id) {
+    if (syn_id >= 0 && syn_id < static_cast<int>(synapses.size()))
+        synapses[syn_id].enable();
+}
+
+void Network::disableNeuron(int neuron_id) {
+    if (neuron_id >= 0 && neuron_id < static_cast<int>(neurons.size()))
+        neurons[neuron_id].disable();
+}
+
+void Network::enableNeuron(int neuron_id) {
+    if (neuron_id >= 0 && neuron_id < static_cast<int>(neurons.size()))
+        neurons[neuron_id].enable();
+}
+
+size_t Network::getActiveNeuronCount() const {
+    size_t count = 0;
+    for (const auto& n : neurons) if (n.isEnabled()) count++;
+    return count;
+}
+
+size_t Network::getActiveSynapseCount() const {
+    size_t count = 0;
+    for (const auto& s : synapses) if (s.isEnabled()) count++;
+    return count;
 }
 
 // ===== ELIMINACIÓN DE TOPOLOGÍA =====

@@ -15,14 +15,20 @@ class Individual {
 public:
     explicit Individual(Network* n) : net(n) {}
 
-    // Mutaciones
-    int  insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING) { return net->insertNeuron(syn_id, type); }
-    int  insertSynapse(int pre_id, int post_id, bool excitatory = true)          { return net->addSynapse(pre_id, post_id, excitatory); }
-    void deleteSynapse(int syn_id)                                               { net->removeSynapse(syn_id); }
-    void removeNeuron(int neuron_id)                                             { net->removeNeuron(neuron_id); }
-    void toggleSynapsePolarity(int syn_id)                                       { net->setSynapseExcitatory(syn_id, !net->getSynapse(syn_id).isExcitatory()); }
-    void changeActivation(int neuron_id, NeuronType type)                        { net->setNeuronType(neuron_id, type); }
-    void setRecurrent(bool recurrent)                                            { net->setRecurrent(recurrent); }
+    // Mutaciones de topología (reversibles)
+    Network::NeuronInsertionResult insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING) { return net->insertNeuron(syn_id, type); }
+    int  insertSynapse(int pre_id, int post_id, bool excitatory = true)  { return net->addSynapse(pre_id, post_id, excitatory); }
+    void disableSynapse(int syn_id)                                       { net->disableSynapse(syn_id); }
+    void enableSynapse(int syn_id)                                        { net->enableSynapse(syn_id); }
+    void disableNeuron(int neuron_id)                                     { net->disableNeuron(neuron_id); }
+    void enableNeuron(int neuron_id)                                      { net->enableNeuron(neuron_id); }
+    void toggleSynapsePolarity(int syn_id)                                { net->setSynapseExcitatory(syn_id, !net->getSynapse(syn_id).isExcitatory()); }
+    void changeActivation(int neuron_id, NeuronType type)                 { net->setNeuronType(neuron_id, type); }
+    void setRecurrent(bool recurrent)                                     { net->setRecurrent(recurrent); }
+
+    // Eliminación física (permanente, para limpieza)
+    void deleteSynapse(int syn_id)   { net->removeSynapse(syn_id); }
+    void deleteNeuron(int neuron_id) { net->removeNeuron(neuron_id); }
 
     // Acceso directo a la red
     Network* getNetwork() { return net; }

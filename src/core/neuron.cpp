@@ -6,7 +6,7 @@ thread_local std::uniform_real_distribution<double> IzhikevichNeuron::uniform{-0
 
 IzhikevichNeuron::IzhikevichNeuron(NeuronType type, double i_offset, double noise,
                                    double tau_exc, double tau_inh)
-        : i_offset(i_offset), noise(noise), spiked(false),
+        : i_offset(i_offset), noise(noise), spiked(false), enabled(true),
           g_exc(0.0), g_inh(0.0),
           tau_exc(tau_exc), tau_inh(tau_inh) {
     switch(type) {
@@ -41,7 +41,7 @@ IzhikevichNeuron::IzhikevichNeuron(double a, double b, double c, double d,
                                    double i_offset, double noise,
                                    double tau_exc, double tau_inh)
         : a(a), b(b), c(c), d(d), v(c), u(b*c),
-          i_offset(i_offset), noise(noise), spiked(false),
+          i_offset(i_offset), noise(noise), spiked(false), enabled(true),
           g_exc(0.0), g_inh(0.0),
           tau_exc(tau_exc), tau_inh(tau_inh) {}
 

@@ -57,10 +57,23 @@ public:
     void removeSynapse(int syn_id);
     void removeNeuron(int neuron_id);
 
-    // Mutación: inserta una neurona oculta partiendo una sinapsis existente.
-    // Elimina syn_id, crea la neurona y dos sinapsis heredando el g_type original.
-    // Devuelve el ID de la nueva neurona, o -1 si syn_id es inválido.
-    int insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING);
+    // Resultado de insertNeuron: IDs necesarios para revertir la mutación
+    struct NeuronInsertionResult {
+        int neuron_id;    // nueva neurona oculta (-1 si falló)
+        int syn_in;       // sinapsis pre → nueva neurona
+        int syn_out;      // sinapsis nueva neurona → post
+        int syn_disabled; // sinapsis original deshabilitada
+    };
+
+    // Mutación: inserta una neurona oculta deshabilitando la sinapsis existente.
+    // Las dos sinapsis nuevas heredan el g_type original.
+    NeuronInsertionResult insertNeuron(int syn_id, NeuronType type = NeuronType::REGULAR_SPIKING);
+
+    // Habilitar / deshabilitar elementos (reversible, estilo WANN)
+    void disableSynapse(int syn_id);
+    void enableSynapse(int syn_id);
+    void disableNeuron(int neuron_id);
+    void enableNeuron(int neuron_id);
     
     // Simulación - el peso compartido se pasa como parámetro
     void step(double shared_weight);
@@ -84,6 +97,8 @@ public:
     // Información de la red
     size_t getNeuronCount() const { return neurons.size(); }
     size_t getSynapseCount() const { return synapses.size(); }
+    size_t getActiveNeuronCount() const;
+    size_t getActiveSynapseCount() const;
     size_t getInputCount() const { return input_neurons.size(); }
     size_t getOutputCount() const { return output_neurons.size(); }
     double getCurrentTime() const { return current_time; }

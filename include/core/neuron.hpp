@@ -24,6 +24,7 @@ private:
     double i_offset; // Corriente de offset constante (mA)
     double noise;    // Amplitud de ruido uniforme [-0.5, 0.5] * noise
     bool spiked;     // Indica si la neurona se dispara o no
+    bool enabled;    // false = deshabilitada (WANN: no participa en simulación)
     double g_exc;   // Conductancia excitatoria (AMPA)
     double g_inh;   // Conductancia inhibitoria (GABA)
     double tau_exc; // Constante de tiempo AMPA (ms)
@@ -48,6 +49,9 @@ public:
     void reset();
 
     bool hasSpiked() const { return spiked; }
+    bool isEnabled() const { return enabled; }
+    void enable()          { enabled = true; }
+    void disable()         { enabled = false; }
     double getVoltage() const { return v; }
     double getRecovery() const { return u; }
     double getGExc() const { return g_exc; }
