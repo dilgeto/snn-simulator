@@ -33,6 +33,7 @@ target_include_directories(snn_core PUBLIC
 
 # Codificador del simulador
 add_library(snn_encoding
+    src/encoding/encoder.cpp
     src/encoding/poissonEncoder.cpp
     src/encoding/rateEncoder.cpp
     src/encoding/rlEncoder.cpp

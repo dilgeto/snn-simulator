@@ -1,0 +1,86 @@
+[
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_core.dir/src/core/neuron.cpp.o -c /home/dilget/Tesis/snn-simulator/src/core/neuron.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/core/neuron.cpp",
+  "output": "CMakeFiles/snn_core.dir/src/core/neuron.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_core.dir/src/core/network.cpp.o -c /home/dilget/Tesis/snn-simulator/src/core/network.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/core/network.cpp",
+  "output": "CMakeFiles/snn_core.dir/src/core/network.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_encoding.dir/src/encoding/encoder.cpp.o -c /home/dilget/Tesis/snn-simulator/src/encoding/encoder.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/encoding/encoder.cpp",
+  "output": "CMakeFiles/snn_encoding.dir/src/encoding/encoder.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_encoding.dir/src/encoding/poissonEncoder.cpp.o -c /home/dilget/Tesis/snn-simulator/src/encoding/poissonEncoder.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/encoding/poissonEncoder.cpp",
+  "output": "CMakeFiles/snn_encoding.dir/src/encoding/poissonEncoder.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_encoding.dir/src/encoding/rateEncoder.cpp.o -c /home/dilget/Tesis/snn-simulator/src/encoding/rateEncoder.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/encoding/rateEncoder.cpp",
+  "output": "CMakeFiles/snn_encoding.dir/src/encoding/rateEncoder.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_encoding.dir/src/encoding/rlEncoder.cpp.o -c /home/dilget/Tesis/snn-simulator/src/encoding/rlEncoder.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/encoding/rlEncoder.cpp",
+  "output": "CMakeFiles/snn_encoding.dir/src/encoding/rlEncoder.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -fopenmp -o CMakeFiles/snn_engine.dir/src/core/simulator.cpp.o -c /home/dilget/Tesis/snn-simulator/src/core/simulator.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/core/simulator.cpp",
+  "output": "CMakeFiles/snn_engine.dir/src/core/simulator.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -fopenmp -o CMakeFiles/snn_engine.dir/src/decoding/decoder.cpp.o -c /home/dilget/Tesis/snn-simulator/src/decoding/decoder.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/decoding/decoder.cpp",
+  "output": "CMakeFiles/snn_engine.dir/src/decoding/decoder.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -fopenmp -o CMakeFiles/snn_simulator.dir/src/core/main.cpp.o -c /home/dilget/Tesis/snn-simulator/src/core/main.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/core/main.cpp",
+  "output": "CMakeFiles/snn_simulator.dir/src/core/main.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_tests.dir/tests/core/networkTests.cpp.o -c /home/dilget/Tesis/snn-simulator/tests/core/networkTests.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/tests/core/networkTests.cpp",
+  "output": "CMakeFiles/snn_tests.dir/tests/core/networkTests.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_tests.dir/tests/core/neuronTests.cpp.o -c /home/dilget/Tesis/snn-simulator/tests/core/neuronTests.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/tests/core/neuronTests.cpp",
+  "output": "CMakeFiles/snn_tests.dir/tests/core/neuronTests.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_tests.dir/tests/core/izhikevichTests.cpp.o -c /home/dilget/Tesis/snn-simulator/tests/core/izhikevichTests.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/tests/core/izhikevichTests.cpp",
+  "output": "CMakeFiles/snn_tests.dir/tests/core/izhikevichTests.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include -I/home/dilget/rl-tools/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -fopenmp -o CMakeFiles/snn_pendulum.dir/src/rl/pendulum_eval.cpp.o -c /home/dilget/Tesis/snn-simulator/src/rl/pendulum_eval.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/rl/pendulum_eval.cpp",
+  "output": "CMakeFiles/snn_pendulum.dir/src/rl/pendulum_eval.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include -I/home/dilget/rl-tools/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -fopenmp -o CMakeFiles/snn_acrobot.dir/src/rl/acrobot_eval.cpp.o -c /home/dilget/Tesis/snn-simulator/src/rl/acrobot_eval.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/rl/acrobot_eval.cpp",
+  "output": "CMakeFiles/snn_acrobot.dir/src/rl/acrobot_eval.cpp.o"
+}
+]

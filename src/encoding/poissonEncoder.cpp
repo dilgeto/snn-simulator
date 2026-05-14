@@ -1,20 +1,22 @@
 // src/encoding/poisson_encoder.cpp
 #include "../../include/encoding/poissonEncoder.hpp"
+#include <algorithm>
 #include <random>
 
 PoissonEncoder::PoissonEncoder(double max_rate, bool use_refractory, double refractory_period)
-    : max_rate(max_rate), 
+    : max_rate(max_rate),
       use_refractory(use_refractory),
       refractory_period(refractory_period) {
 }
 
 std::vector<double> PoissonEncoder::encode(double value, double duration, double dt) const {
-    if (!isValid(value)) {
-        return {};
-    }
-    
+    // Clamp a [0, 1]: un valor negativo daría spike_prob < 0, haciendo que
+    // dis(gen) < spike_prob nunca sea verdad → 0 spikes sin aviso.
+    // Un valor > 1 violaría el contrato de tasa máxima.
+    value = std::clamp(value, 0.0, 1.0);
+
     std::vector<double> spike_times;
-    
+
     double firing_rate = value * max_rate;
     double spike_prob = (firing_rate / 1000.0) * dt;
     
@@ -53,7 +55,7 @@ std::vector<double> PoissonEncoder::encodeTemporalPattern(
     
     for (size_t i = 0; i < rate_pattern.size(); i++) {
         double t = i * dt;
-        double firing_rate = rate_pattern[i] * max_rate;
+        double firing_rate = std::clamp(rate_pattern[i], 0.0, 1.0) * max_rate;
         double spike_prob = (firing_rate / 1000.0) * dt;
         
         if (use_refractory && (t - last_spike_time) < refractory_period) {
