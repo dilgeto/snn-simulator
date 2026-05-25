@@ -29,9 +29,10 @@ std::vector<double> RLEncoder::encode(double value, double duration, double dt) 
             break;
         }
         case EncodingType::POPULATION:
-        case EncodingType::SIGN_MAGNITUDE:
+        case EncodingType::SMALL:
+        case EncodingType::LARGE:
         case EncodingType::INTERVAL:
-            // Estos tipos usan métodos propios (encodePopulation, encodeSignMagnitude, encodeInterval)
+            // Estos tipos usan métodos propios
             break;
     }
 
@@ -69,51 +70,71 @@ std::vector<std::vector<double>> RLEncoder::encodePopulation(
     return population_spikes;
 }
 
-// Sign-magnitude: 2 spike trains por feature
-// [0] = neurona negativa, [1] = neurona positiva
-std::vector<std::vector<double>> RLEncoder::encodeSignMagnitude(
-    double value,
-    double duration,
-    double dt,
-    double weight) const {
-
-    (void)dt;
-    std::vector<std::vector<double>> spikes(2);
-
+// Small encoding — traducción directa de ANNarchy-NEAT (bastianloyola).
+// Devuelve {I_neg, I_pos}: corriente a inyectar en la neurona negativa y positiva.
+//   value < 0  →  neurona negativa recibe |value|×weight, positiva recibe 0
+//   value ≥ 0  →  neurona negativa recibe 0, positiva recibe value×weight
+// Usar resultado con Network::setInputCurrents() en cada paso de simulación.
+std::pair<double, double> RLEncoder::encodeSmall(double value, double weight) const {
     double magnitude = std::abs(value) * weight;
-    double firing_rate = std::min(magnitude * max_rate, max_rate);
-
-    if (firing_rate < 1.0) {
-        return spikes;  // Ambas neuronas silenciosas
-    }
-
-    double inter_spike_interval = 1000.0 / firing_rate;
-    int active = (value < 0) ? 0 : 1;  // 0 = negativo, 1 = positivo
-    for (double t = 0; t < duration; t += inter_spike_interval) {
-        spikes[active].push_back(t);
-    }
-
-    return spikes;
+    if (value < 0)
+        return {magnitude, 0.0};
+    else
+        return {0.0, magnitude};
 }
 
-// Encodes una observación completa con SIGN_MAGNITUDE (2*N spike trains)
-std::vector<std::vector<double>> RLEncoder::encodeObservationSignMagnitude(
+// Codifica observación completa con SMALL.
+// Resultado: [I_neg_0, I_pos_0, I_neg_1, I_pos_1, ...]  (2×N elementos)
+std::vector<double> RLEncoder::encodeObservationSmall(
     const std::vector<double>& observation,
-    const std::vector<double>& weights,
-    double duration,
-    double dt) const {
+    double weight) const {
 
-    std::vector<std::vector<double>> all_spikes;
-    all_spikes.reserve(observation.size() * 2);
+    std::vector<double> currents;
+    currents.reserve(observation.size() * 2);
+    for (double val : observation) {
+        auto [neg, pos] = encodeSmall(val, weight);
+        currents.push_back(neg);
+        currents.push_back(pos);
+    }
+    return currents;
+}
+
+// Large encoding — traducción de cartpole2/cartpole3 de ANNarchy-NEAT (bastianloyola).
+// neurons_per_var neuronas por feature. Solo la del intervalo activo recibe current_val;
+// el resto recibe 0. La neurona dispara múltiples veces por dinámica Izhikevich.
+// Usar resultado con Network::setInputCurrents() en cada paso de simulación.
+std::vector<double> RLEncoder::encodeLarge(
+        double value, double low, double high, double current_val) const {
+
+    std::vector<double> currents(neurons_per_var, 0.0);
+    if (neurons_per_var == 0 || high <= low) return currents;
+
+    double step = (high - low) / static_cast<double>(neurons_per_var);
+    double clamped = std::clamp(value, low, high);
+    int idx = static_cast<int>((clamped - low) / step);
+    if (idx >= static_cast<int>(neurons_per_var))
+        idx = static_cast<int>(neurons_per_var) - 1;
+
+    currents[idx] = current_val;
+    return currents;
+}
+
+// Codifica observación completa con LARGE (neurons_per_var × N corrientes).
+std::vector<double> RLEncoder::encodeObservationLarge(
+        const std::vector<double>& observation,
+        const std::vector<std::pair<double, double>>& limits,
+        double current_val) const {
+
+    std::vector<double> all_currents;
+    all_currents.reserve(observation.size() * neurons_per_var);
 
     for (size_t i = 0; i < observation.size(); i++) {
-        double w = (i < weights.size()) ? weights[i] : 1.0;
-        auto pair_spikes = encodeSignMagnitude(observation[i], duration, dt, w);
-        all_spikes.push_back(std::move(pair_spikes[0]));
-        all_spikes.push_back(std::move(pair_spikes[1]));
+        double low  = (i < limits.size()) ? limits[i].first  : 0.0;
+        double high = (i < limits.size()) ? limits[i].second : 1.0;
+        for (double c : encodeLarge(observation[i], low, high, current_val))
+            all_currents.push_back(c);
     }
-
-    return all_spikes;
+    return all_currents;
 }
 
 // Interval coding: neurons_per_var spike trains por feature

@@ -64,7 +64,7 @@ UpdateType: git
 
 # Compiler info
 Compiler: /usr/bin/c++
-CompilerVersion: 15.2.1
+CompilerVersion: 16.1.1
 
 # Dynamic analysis (MemCheck)
 PurifyCommand: 
