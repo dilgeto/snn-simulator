@@ -9,7 +9,7 @@ std::vector<double> TTFSEncoder::encode(double value, double duration, double dt
         return {};
     }
 
-    double t_max = duration * t_max_ratio;
+    double t_max = (duration - dt) * t_max_ratio;
     double t_spike = 0.0;
 
     switch (mapping) {

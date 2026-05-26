@@ -37,6 +37,7 @@ add_library(snn_encoding
     src/encoding/poissonEncoder.cpp
     src/encoding/rateEncoder.cpp
     src/encoding/rlEncoder.cpp
+    src/encoding/ttfsEncoder.cpp
 )
 
 target_include_directories(snn_encoding PUBLIC

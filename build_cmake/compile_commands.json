@@ -37,6 +37,12 @@
 },
 {
   "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
+  "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -o CMakeFiles/snn_encoding.dir/src/encoding/ttfsEncoder.cpp.o -c /home/dilget/Tesis/snn-simulator/src/encoding/ttfsEncoder.cpp",
+  "file": "/home/dilget/Tesis/snn-simulator/src/encoding/ttfsEncoder.cpp",
+  "output": "CMakeFiles/snn_encoding.dir/src/encoding/ttfsEncoder.cpp.o"
+},
+{
+  "directory": "/home/dilget/Tesis/snn-simulator/build_cmake",
   "command": "/usr/bin/c++  -I/home/dilget/Tesis/snn-simulator/include  -Wall -Wextra -O3 -march=native -std=gnu++17 -fopenmp -o CMakeFiles/snn_engine.dir/src/core/simulator.cpp.o -c /home/dilget/Tesis/snn-simulator/src/core/simulator.cpp",
   "file": "/home/dilget/Tesis/snn-simulator/src/core/simulator.cpp",
   "output": "CMakeFiles/snn_engine.dir/src/core/simulator.cpp.o"

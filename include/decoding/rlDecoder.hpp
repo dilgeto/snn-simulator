@@ -40,6 +40,10 @@ public:
     // Decodificar a acción continua (e.g., torque, velocidad)
     double decodeContinuousAction(const std::vector<double>& spike_times) const;
 
+    // Decodificar acción continua normalizada a [-1, 1].
+    // max_spikes: número de spikes que corresponde a la acción máxima (+1).
+    double decodeContinuousAction(const std::vector<double>& spike_times, double max_spikes) const;
+
     // Decodificar múltiples outputs continuos
     std::vector<double> decodeContinuousActions(
         const std::vector<std::vector<double>>& output_spikes) const;

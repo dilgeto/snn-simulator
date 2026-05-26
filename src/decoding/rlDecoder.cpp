@@ -127,6 +127,22 @@ double RLDecoder::decodeContinuousAction(const std::vector<double>& spike_times)
     }
 }
 
+double RLDecoder::decodeContinuousAction(const std::vector<double>& spike_times, double max_spikes) const {
+    if (spike_times.empty()) return -1.0;
+
+    const double n = static_cast<double>(spike_times.size());
+    switch (type) {
+        case DecodingType::FIRST_SPIKE: {
+            double latency = spike_times[0] / window_duration;
+            return std::clamp(1.0 - 2.0 * latency, -1.0, 1.0);
+        }
+        case DecodingType::SPIKE_COUNT:
+            return std::clamp(std::min(1.0, n / max_spikes) * 2.0 - 1.0, -1.0, 1.0);
+        default:
+            return std::clamp(n / max_spikes * 2.0 - 1.0, -1.0, 1.0);
+    }
+}
+
 std::vector<double> RLDecoder::decodeContinuousActions(
     const std::vector<std::vector<double>>& output_spikes) const {
 
