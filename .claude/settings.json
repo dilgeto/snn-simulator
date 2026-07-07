@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmake --build /home/dilget/Tesis/snn-simulator/build --target snn_tests)",
+      "Bash(./build/snn_tests \"[izhikevich]\" -v)",
+      "Bash(./build/snn_tests --reporter compact)",
+      "Bash(cmake -S . -B build_cmake -DCMAKE_BUILD_TYPE=Release)",
+      "Bash(cmake --build build_cmake --target snn_encoding)",
+      "Bash(cmake --build /home/dilget/Tesis/snn-simulator/build_cmake --target snn_encoding)"
+    ]
+  }
+}

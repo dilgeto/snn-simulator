@@ -108,6 +108,7 @@ double RLDecoder::decodeContinuousAction(const std::vector<double>& spike_times)
     }
 
     switch (type) {
+        // TODO: Revisar SPIKE_COUNT y determinar la diferencia con RATE
         case DecodingType::SPIKE_COUNT:
             return std::min(1.0, spike_times.size() / 10.0) * 2.0 - 1.0;
 
