@@ -90,6 +90,19 @@ set_target_properties(snn_simulator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
 )
 
+# Inyección de corriente directa en neuronas individuales
+add_executable(snn_current_injection
+    src/core/current_injection_main.cpp
+)
+target_link_libraries(snn_current_injection
+    PRIVATE
+        snn_core
+        CLI11::CLI11
+)
+set_target_properties(snn_current_injection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
+)
+
 # Evaluación del péndulo con RLTools
 add_executable(snn_pendulum
     src/rl/pendulum_eval.cpp
