@@ -28,6 +28,64 @@ IzhikevichNeuron::IzhikevichNeuron(NeuronType type, double i_offset, double nois
         case NeuronType::RESONATOR:
             a = 0.1; b = 0.26; c = -65.0; d = 2.0;
             break;
+        // Izhikevich (2004), Fig. 1 — 20 patrones de disparo.
+        case NeuronType::TONIC_SPIKING:
+            a = 0.02; b = 0.2; c = -65.0; d = 6.0;
+            break;
+        case NeuronType::PHASIC_SPIKING:
+            a = 0.02; b = 0.25; c = -65.0; d = 6.0;
+            break;
+        case NeuronType::TONIC_BURSTING:
+            a = 0.02; b = 0.2; c = -50.0; d = 2.0;
+            break;
+        case NeuronType::PHASIC_BURSTING:
+            a = 0.02; b = 0.25; c = -55.0; d = 0.05;
+            break;
+        case NeuronType::MIXED_MODE:
+            a = 0.02; b = 0.2; c = -55.0; d = 4.0;
+            break;
+        case NeuronType::SPIKE_FREQUENCY_ADAPTATION:
+            a = 0.01; b = 0.2; c = -65.0; d = 8.0;
+            break;
+        case NeuronType::CLASS1_EXCITABLE:
+            a = 0.02; b = -0.1; c = -55.0; d = 6.0;
+            break;
+        case NeuronType::CLASS2_EXCITABLE:
+            a = 0.2; b = 0.26; c = -65.0; d = 0.0;
+            break;
+        case NeuronType::SPIKE_LATENCY:
+            a = 0.02; b = 0.2; c = -65.0; d = 6.0;
+            break;
+        case NeuronType::SUBTHRESHOLD_OSCILLATIONS:
+            a = 0.05; b = 0.26; c = -60.0; d = 0.0;
+            break;
+        case NeuronType::INTEGRATOR:
+            a = 0.02; b = -0.1; c = -55.0; d = 6.0;
+            break;
+        case NeuronType::REBOUND_SPIKE:
+            a = 0.03; b = 0.25; c = -60.0; d = 4.0;
+            break;
+        case NeuronType::REBOUND_BURST:
+            a = 0.03; b = 0.25; c = -52.0; d = 0.0;
+            break;
+        case NeuronType::THRESHOLD_VARIABILITY:
+            a = 0.03; b = 0.25; c = -60.0; d = 4.0;
+            break;
+        case NeuronType::BISTABILITY:
+            a = 1.0; b = 1.5; c = -60.0; d = 0.0;
+            break;
+        case NeuronType::DEPOLARIZING_AFTERPOTENTIAL:
+            a = 1.0; b = 0.2; c = -60.0; d = -21.0;
+            break;
+        case NeuronType::ACCOMMODATION:
+            a = 0.02; b = 1.0; c = -55.0; d = 4.0;
+            break;
+        case NeuronType::INHIBITION_INDUCED_SPIKING:
+            a = -0.02; b = -1.0; c = -60.0; d = 8.0;
+            break;
+        case NeuronType::INHIBITION_INDUCED_BURSTING:
+            a = -0.026; b = -1.0; c = -45.0; d = -2.0;
+            break;
         default:
             a = 0.02; b = 0.2; c = -65.0; d = 8.0;
             break;
@@ -59,6 +117,47 @@ void IzhikevichNeuron::setNeuronType(NeuronType type) {
             a = 0.02; b = 0.25; c = -65.0; d = 2.0; break;
         case NeuronType::RESONATOR:
             a = 0.1;  b = 0.26; c = -65.0; d = 2.0; break;
+
+        // Izhikevich (2004), Fig. 1 — 20 patrones de disparo.
+        case NeuronType::TONIC_SPIKING:
+            a = 0.02; b = 0.2;  c = -65.0; d = 6.0;   break;
+        case NeuronType::PHASIC_SPIKING:
+            a = 0.02; b = 0.25; c = -65.0; d = 6.0;   break;
+        case NeuronType::TONIC_BURSTING:
+            a = 0.02; b = 0.2;  c = -50.0; d = 2.0;   break;
+        case NeuronType::PHASIC_BURSTING:
+            a = 0.02; b = 0.25; c = -55.0; d = 0.05;  break;
+        case NeuronType::MIXED_MODE:
+            a = 0.02; b = 0.2;  c = -55.0; d = 4.0;   break;
+        case NeuronType::SPIKE_FREQUENCY_ADAPTATION:
+            a = 0.01; b = 0.2;  c = -65.0; d = 8.0;   break;
+        case NeuronType::CLASS1_EXCITABLE:
+            a = 0.02; b = -0.1; c = -55.0; d = 6.0;   break;
+        case NeuronType::CLASS2_EXCITABLE:
+            a = 0.2;  b = 0.26; c = -65.0; d = 0.0;   break;
+        case NeuronType::SPIKE_LATENCY:
+            a = 0.02; b = 0.2;  c = -65.0; d = 6.0;   break;
+        case NeuronType::SUBTHRESHOLD_OSCILLATIONS:
+            a = 0.05; b = 0.26; c = -60.0; d = 0.0;   break;
+        case NeuronType::INTEGRATOR:
+            a = 0.02; b = -0.1; c = -55.0; d = 6.0;   break;
+        case NeuronType::REBOUND_SPIKE:
+            a = 0.03; b = 0.25; c = -60.0; d = 4.0;   break;
+        case NeuronType::REBOUND_BURST:
+            a = 0.03; b = 0.25; c = -52.0; d = 0.0;   break;
+        case NeuronType::THRESHOLD_VARIABILITY:
+            a = 0.03; b = 0.25; c = -60.0; d = 4.0;   break;
+        case NeuronType::BISTABILITY:
+            a = 1.0;  b = 1.5;  c = -60.0; d = 0.0;   break;
+        case NeuronType::DEPOLARIZING_AFTERPOTENTIAL:
+            a = 1.0;  b = 0.2;  c = -60.0; d = -21.0; break;
+        case NeuronType::ACCOMMODATION:
+            a = 0.02; b = 1.0;  c = -55.0; d = 4.0;   break;
+        case NeuronType::INHIBITION_INDUCED_SPIKING:
+            a = -0.02;  b = -1.0; c = -60.0; d = 8.0;  break;
+        case NeuronType::INHIBITION_INDUCED_BURSTING:
+            a = -0.026; b = -1.0; c = -45.0; d = -2.0; break;
+
         default:
             a = 0.02; b = 0.2; c = -65.0; d = 8.0; break;
     }

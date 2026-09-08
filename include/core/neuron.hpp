@@ -3,13 +3,48 @@
 
 #include <random>
 
+// Los primeros 6 son las clases corticales/talámicas clásicas de Izhikevich
+// (Fig. 2 de Izhikevich, "Which Model to Use for Cortical Spiking Neurons?",
+// IEEE Trans. Neural Networks 15(5), 2004). Los siguientes 19 cubren los 20
+// patrones de disparo de la Fig. 1 del mismo trabajo (RESONATOR ya cubre el
+// patrón "Resonator" de esa figura, con (a,b,c,d) casi idénticos, así que no
+// se duplica).
+//
+// Nota: algunos pares comparten (a,b,c,d) exactos en la tabla original de
+// Izhikevich — el comportamiento distinto que da nombre a cada uno depende
+// del protocolo de corriente de entrada (pulso breve, rampa, pulso negativo
+// seguido de liberación), no solo de los parámetros del modelo. Con la
+// corriente que efectivamente reciban de la red evolucionada pueden
+// comportarse de forma idéntica a su par:
+//   SPIKE_LATENCY == TONIC_SPIKING (mismos a,b,c,d)
+//   INTEGRATOR == CLASS1_EXCITABLE (mismos a,b,c,d)
+//   THRESHOLD_VARIABILITY == REBOUND_SPIKE (mismos a,b,c,d)
 enum class NeuronType {
     REGULAR_SPIKING,
     FAST_SPIKING,
     INTRINSICALLY_BURSTING,
     CHATTERING,
     LOW_THRESHOLD_SPIKING,
-    RESONATOR
+    RESONATOR,
+    TONIC_SPIKING,
+    PHASIC_SPIKING,
+    TONIC_BURSTING,
+    PHASIC_BURSTING,
+    MIXED_MODE,
+    SPIKE_FREQUENCY_ADAPTATION,
+    CLASS1_EXCITABLE,
+    CLASS2_EXCITABLE,
+    SPIKE_LATENCY,
+    SUBTHRESHOLD_OSCILLATIONS,
+    INTEGRATOR,
+    REBOUND_SPIKE,
+    REBOUND_BURST,
+    THRESHOLD_VARIABILITY,
+    BISTABILITY,
+    DEPOLARIZING_AFTERPOTENTIAL,
+    ACCOMMODATION,
+    INHIBITION_INDUCED_SPIKING,
+    INHIBITION_INDUCED_BURSTING
 };
 
 class IzhikevichNeuron {
