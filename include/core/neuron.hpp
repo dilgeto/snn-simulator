@@ -66,6 +66,20 @@ private:
     double tau_inh; // Constante de tiempo GABA (ms)
 
     static constexpr double V_THRESHOLD = 30.0;
+    // Red de seguridad numérica (NO el límite de disparo — eso sigue siendo
+    // V_THRESHOLD): algunas combinaciones (a,b,c,d) — p.ej. BISTABILITY
+    // (a=1, b=1.5) — pueden hacer que el término 0.04*v*v del modelo de
+    // Izhikevich diverja a Inf/NaN bajo Euler con dt=1ms. v/u se clampean a
+    // estos rangos tras cada sub-paso SOLO para cortar esa divergencia.
+    // Deliberadamente muy por fuera de cualquier trayectoria normal — un
+    // spike sano puede pasarse de V_THRESHOLD por unas pocas decenas dentro
+    // de un sub-paso (verificado con los 6 tipos originales: conteo de
+    // spikes y v idénticos con y sin este clamp) y estas cotas no lo tocan.
+    // No usar V_THRESHOLD como cota superior: eso SÍ altera la dinámica de
+    // neuronas bien portadas cerca del umbral (probado empíricamente).
+    static constexpr double V_SAFETY_MAX = 1.0e4;
+    static constexpr double V_SAFETY_MIN = -1.0e4;
+    static constexpr double U_SAFETY_LIMIT = 1.0e6;
 
     // Generador de ruido (thread-local para evitar condiciones de carrera)
     static thread_local std::mt19937 rng;

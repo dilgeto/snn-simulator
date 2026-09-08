@@ -1,5 +1,7 @@
 #include "../../include/core/neuron.hpp"
 
+#include <algorithm>
+
 // Definición de miembros estáticos thread-local
 thread_local std::mt19937 IzhikevichNeuron::rng{std::random_device{}()};
 thread_local std::uniform_real_distribution<double> IzhikevichNeuron::uniform{-0.5, 0.5};
@@ -190,12 +192,16 @@ void IzhikevichNeuron::step(double dt) {
     for (int i = 0; i < 2; i++) {
         // Corriente total: excitatoria - inhibitoria + directa + offset + ruido
         double I_total = g_exc - g_inh + i_offset + noise * uniform(rng);
-        
+
         double dv = (0.04 * v * v + 5.0 * v + 140.0 - u + I_total) * (dt / 2.0);
         v += dv;
+        // Red de seguridad, no el límite de disparo: ver comentario junto a
+        // V_SAFETY_MAX/MIN en neuron.hpp. No usar V_THRESHOLD acá.
+        v = std::clamp(v, V_SAFETY_MIN, V_SAFETY_MAX);
 
         double du = a * (b * v - u) * (dt / 2.0);
         u += du;
+        u = std::clamp(u, -U_SAFETY_LIMIT, U_SAFETY_LIMIT);
     }
 
     if (v >= V_THRESHOLD) {
