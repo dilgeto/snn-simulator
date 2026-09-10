@@ -1,6 +1,7 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
+#include <cstddef>
 #include <vector>
 #include "neuron.hpp"
 #include "synapse.hpp"

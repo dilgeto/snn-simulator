@@ -4,6 +4,7 @@
 #include "network.hpp"
 #include "../encoding/encoder.hpp"
 #include "../decoding/decoder.hpp"
+#include <cstddef>
 #include <vector>
 #include <memory>
 #include <functional>

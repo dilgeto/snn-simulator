@@ -3,6 +3,7 @@
 #define RL_ENCODER_HPP
 
 #include "encoder.hpp"
+#include <cstddef>
 #include <utility>
 
 // Encoder optimizado para Reinforcement Learning
