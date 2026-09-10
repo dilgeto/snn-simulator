@@ -12,7 +12,6 @@ include(CTest)
 enable_testing()
 
 find_package(CLI11 CONFIG REQUIRED)
-find_package(Catch2 3 REQUIRED)
 find_package(OpenMP REQUIRED)
 
 # RLTools (header-only)
@@ -71,20 +70,27 @@ target_link_libraries(snn_simulator
         CLI11::CLI11
 )
 
-# Tests
-add_executable(snn_tests
-    tests/core/networkTests.cpp
-    tests/core/neuronTests.cpp
-    tests/core/izhikevichTests.cpp
-)
-target_link_libraries(snn_tests
-    PRIVATE
-        snn_core
-        Catch2::Catch2WithMain
-)
+# Tests — gated behind BUILD_TESTING (from include(CTest) above, default ON)
+# so environments without Catch2 3 (e.g. the ZCU104/PYNQ board, which only
+# ships Catch2 2.13.8 via apt) can still build the core libraries with
+# -DBUILD_TESTING=OFF, without needing Catch2 at all.
+if(BUILD_TESTING)
+  find_package(Catch2 3 REQUIRED)
 
-include(Catch)
-catch_discover_tests(snn_tests)
+  add_executable(snn_tests
+      tests/core/networkTests.cpp
+      tests/core/neuronTests.cpp
+      tests/core/izhikevichTests.cpp
+  )
+  target_link_libraries(snn_tests
+      PRIVATE
+          snn_core
+          Catch2::Catch2WithMain
+  )
+
+  include(Catch)
+  catch_discover_tests(snn_tests)
+endif()
 
 set_target_properties(snn_simulator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
