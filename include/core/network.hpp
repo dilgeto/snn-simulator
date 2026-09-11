@@ -108,6 +108,12 @@ public:
     // Acceso directo (para análisis)
     const IzhikevichNeuron& getNeuron(int id) const { return neurons[id]; }
     void setNeuronType(int neuron_id, NeuronType type) { neurons[neuron_id].setNeuronType(type); }
+
+    // Aplica las mismas constantes de tiempo de decaimiento de conductancia
+    // (AMPA/GABA) a TODAS las neuronas de la red. Llamar después de construir
+    // la topología completa (nuevas neuronas agregadas después no se ven
+    // afectadas retroactivamente si se llama antes).
+    void setTimeConstants(double tau_exc, double tau_inh);
     void setSynapseExcitatory(int syn_id, bool excitatory) { synapses[syn_id].setExcitatory(excitatory); }
     const Synapse& getSynapse(int id) const { return synapses[id]; }
     

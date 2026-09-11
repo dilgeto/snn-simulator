@@ -149,6 +149,13 @@ void Network::setInputCurrents(const std::vector<double>& currents) {
     }
 }
 
+void Network::setTimeConstants(double tau_exc, double tau_inh) {
+    for (auto& n : neurons) {
+        n.setTauExc(tau_exc);
+        n.setTauInh(tau_inh);
+    }
+}
+
 // Obtener estado de spikes de todas las neuronas
 std::vector<bool> Network::getSpikes() const {
     std::vector<bool> spikes(neurons.size());
