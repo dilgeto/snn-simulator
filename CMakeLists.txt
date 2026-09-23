@@ -5,7 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+if(CMAKE_CROSSCOMPILING AND CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=armv8-a+crc")
+else()
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
 include(CTest)
