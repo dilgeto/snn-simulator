@@ -94,6 +94,47 @@ if(BUILD_TESTING)
 
   include(Catch)
   catch_discover_tests(snn_tests)
+
+  # BipedalWalker en C++ puro: solo cabeceras, sin dependencias del simulador SNN.
+  # -ffp-contract=off evita FMA para que los resultados float32 sean comparables con Box2D
+  # (el binario de producción para la A53 sí puede fusionar multiplicaciones-sumas).
+  add_executable(bipedal_tests
+      tests/rl/bipedal_walker/geometryTests.cpp
+      tests/rl/bipedal_walker/terrainTests.cpp
+      tests/rl/bipedal_walker/freeWalkerTests.cpp
+      tests/rl/bipedal_walker/groundWalkerTests.cpp
+      tests/rl/bipedal_walker/resetTests.cpp
+      tests/rl/bipedal_walker/envTests.cpp
+      tests/rl/bipedal_walker/hardcoreTerrainTests.cpp
+      tests/rl/bipedal_walker/obstacleTests.cpp
+      tests/rl/bipedal_walker/hardcoreLidarTests.cpp
+  )
+  target_include_directories(bipedal_tests PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  target_compile_options(bipedal_tests PRIVATE -ffp-contract=off -Wdouble-promotion)
+  target_compile_definitions(bipedal_tests PRIVATE
+      BIPEDAL_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data/bipedal_walker")
+  target_link_libraries(bipedal_tests PRIVATE Catch2::Catch2WithMain rl_tools)
+  catch_discover_tests(bipedal_tests)
+
+  # Benchmark de host: coste por paso según las iteraciones del solver (ver comentario en el
+  # archivo). No usa Catch2 y no corre en ctest; se ejecuta a mano.
+  add_executable(bipedal_bench
+      tests/rl/bipedal_walker/bench_solver.cpp
+  )
+  target_include_directories(bipedal_bench PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  set_target_properties(bipedal_bench PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
+  )
+
+  # Estudio de fidelidad por ranking (controladores aleatorios vs Box2D). No usa Catch2.
+  add_executable(bipedal_ranking_eval
+      tests/rl/bipedal_walker/ranking_eval.cpp
+  )
+  target_include_directories(bipedal_ranking_eval PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  target_link_libraries(bipedal_ranking_eval PRIVATE rl_tools)
+  set_target_properties(bipedal_ranking_eval PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
+  )
 endif()
 
 set_target_properties(snn_simulator PROPERTIES
@@ -136,6 +177,19 @@ target_link_libraries(snn_acrobot
         rl_tools
 )
 set_target_properties(snn_acrobot PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
+)
+
+# Evaluación del BipedalWalker (port a C++, sin Box2D) con RLTools
+add_executable(snn_bipedal_walker
+    src/rl/bipedal_walker_eval.cpp
+)
+target_link_libraries(snn_bipedal_walker
+    PRIVATE
+        snn_engine
+        rl_tools
+)
+set_target_properties(snn_bipedal_walker PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
 )
 
