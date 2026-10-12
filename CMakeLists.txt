@@ -24,6 +24,20 @@ set(RL_TOOLS_INCLUDE_DIR external/rl-tools/include
 add_library(rl_tools INTERFACE)
 target_include_directories(rl_tools INTERFACE ${RL_TOOLS_INCLUDE_DIR})
 
+# OpenBLAS (opcional): acelera las multiplicaciones de matrices de RLTools (actor/crítico de
+# PPO). Si no está instalado, los ejecutables que lo usan simplemente caen al backend genérico
+# de RLTools (más lento, sin cambiar nada más). RLTools declara sus propios prototipos de
+# cblas_sgemm/cblas_dgemm (ver external/rl-tools/include/rl_tools/devices/cpu_openblas.h), así
+# que solo hace falta enlazar la librería, no sus cabeceras — se usa find_library() en vez de
+# find_package(OpenBLAS) porque el paquete de CMake de OpenBLAS exige un target de OpenMP para
+# Fortran que este proyecto (sin Fortran) no tiene.
+find_library(OpenBLAS_LIBRARY openblas)
+if(OpenBLAS_LIBRARY)
+  message(STATUS "OpenBLAS encontrado (${OpenBLAS_LIBRARY}): se usará para snn_bipedal_walker_ppo")
+else()
+  message(STATUS "OpenBLAS no encontrado: snn_bipedal_walker_ppo usará el backend genérico de RLTools")
+endif()
+
 # Core del simulador
 add_library(snn_core
     src/core/neuron.cpp
@@ -190,6 +204,23 @@ target_link_libraries(snn_bipedal_walker
         rl_tools
 )
 set_target_properties(snn_bipedal_walker PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
+)
+
+# Entrenamiento de BipedalWalker con PPO (bucle genérico de RLTools, sin SNN)
+add_executable(snn_bipedal_walker_ppo
+    src/rl/bipedal_walker_ppo.cpp
+)
+target_include_directories(snn_bipedal_walker_ppo PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(snn_bipedal_walker_ppo
+    PRIVATE
+        rl_tools
+)
+if(OpenBLAS_LIBRARY)
+  target_compile_definitions(snn_bipedal_walker_ppo PRIVATE RL_TOOLS_BACKEND_ENABLE_OPENBLAS)
+  target_link_libraries(snn_bipedal_walker_ppo PRIVATE ${OpenBLAS_LIBRARY})
+endif()
+set_target_properties(snn_bipedal_walker_ppo PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build
 )
 

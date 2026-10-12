@@ -78,7 +78,8 @@ int Network::addSynapse(int pre_id, int post_id, bool excitatory) {
     
     int synapse_id = synapses.size();
     synapses.emplace_back(pre_id, post_id, excitatory);
-    
+    synapse_weights.push_back(0.0);
+
     // Actualizar mapeos
     post_synapses[pre_id].push_back(synapse_id);
     pre_synapses[post_id].push_back(synapse_id);
@@ -116,9 +117,49 @@ void Network::step(double shared_weight) {
 // Ejecutar simulación por una duración con peso compartido
 void Network::run(double duration, double shared_weight) {
     double end_time = current_time + duration;
-    
+
     while (current_time < end_time) {
         step(shared_weight);
+    }
+}
+
+// Fija la magnitud (no-negativa) de una sinapsis para el modo "per-sinapsis".
+// El signo (excitatoria/inhibitoria) lo sigue decidiendo syn.isExcitatory(),
+// no este valor.
+void Network::setSynapseWeight(int syn_id, double magnitude) {
+    synapse_weights[syn_id] = magnitude;
+}
+
+// Paso de simulación "per-sinapsis" - cada sinapsis usa su propio peso en vez
+// del escalar compartido. Copia exacta de step(double) salvo la fuente del peso.
+void Network::step() {
+    for (size_t i = 0; i < neurons.size(); i++) {
+        if (!neurons[i].isEnabled() || !neurons[i].hasSpiked()) continue;
+        for (int syn_id : post_synapses[i]) {
+            const Synapse& syn = synapses[syn_id];
+            if (!syn.isEnabled()) continue;
+            int post_id = syn.getPostNeuronId();
+            if (!neurons[post_id].isEnabled()) continue;
+            double w = syn.getCurrent(synapse_weights[syn_id]);
+            if (syn.isExcitatory())
+                neurons[post_id].addExcConductance(w);
+            else
+                neurons[post_id].addInhConductance(w);
+        }
+    }
+
+    for (size_t i = 0; i < neurons.size(); i++) {
+        if (neurons[i].isEnabled()) neurons[i].step(dt);
+    }
+
+    current_time += dt;
+}
+
+void Network::run(double duration) {
+    double end_time = current_time + duration;
+
+    while (current_time < end_time) {
+        step();
     }
 }
 

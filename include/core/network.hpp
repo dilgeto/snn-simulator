@@ -11,7 +11,15 @@ private:
     // Contenedores principales
     std::vector<IzhikevichNeuron> neurons;
     std::vector<Synapse> synapses;
-    
+
+    // Peso por sinapsis para el modo "per-sinapsis" (ver setSynapseWeight()).
+    // Paralelo a `synapses` (mismo índice = mismo synapse id), 0.0 por
+    // defecto. Solo se mantiene sincronizado con altas (addSynapse); no se
+    // re-sincroniza en removeSynapse/insertNeuron/cascada de aislados — válido
+    // únicamente en una red recién construida que no se vuelve a mutar después
+    // de fijar los pesos (el caso de uso: evaluar una topología ya entrenada).
+    std::vector<double> synapse_weights;
+
     // Mapeo para acceso rápido a conexiones
     // post_synapses[i] = lista de índices de sinapsis que SALEN de la neurona i
     std::vector<std::vector<int>> post_synapses;
@@ -80,7 +88,15 @@ public:
     void step(double shared_weight);
     void reset();
     void run(double duration, double shared_weight);
-    
+
+    // Variantes "per-sinapsis": usan el peso fijado por synapse vía
+    // setSynapseWeight() en vez de un escalar compartido. No modifican ni
+    // comparten código con step(double)/run(double,double) — ver comentario
+    // de `synapse_weights` arriba sobre su alcance.
+    void setSynapseWeight(int syn_id, double magnitude);
+    void step();
+    void run(double duration);
+
     // Entrada/Salida
     void setInputCurrent(int neuron_id, double current);
     void setInputCurrents(const std::vector<double>& currents);
