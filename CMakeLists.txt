@@ -91,9 +91,16 @@ target_link_libraries(snn_simulator
 # Tests — gated behind BUILD_TESTING (from include(CTest) above, default ON)
 # so environments without Catch2 3 (e.g. the ZCU104/PYNQ board, which only
 # ships Catch2 2.13.8 via apt) can still build the core libraries with
-# -DBUILD_TESTING=OFF, without needing Catch2 at all.
+# -DBUILD_TESTING=OFF, without needing Catch2 at all. If Catch2 3 is missing
+# (e.g. Rocky Linux, whose EPEL package is 2.13), the tests are skipped with a warning.
 if(BUILD_TESTING)
-  find_package(Catch2 3 REQUIRED)
+  find_package(Catch2 3 QUIET)
+  if(NOT Catch2_FOUND)
+    message(WARNING "Catch2 >= 3 no encontrado: se omiten los tests (snn_tests, bipedal_*)")
+    set(BUILD_TESTING OFF)
+  endif()
+endif()
+if(BUILD_TESTING)
 
   add_executable(snn_tests
       tests/core/networkTests.cpp
